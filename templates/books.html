@@ -1,0 +1,39 @@
+{% extends 'layouts/user_base.html' if session.get('user') == 'User' else 'base.html' %}
+
+{% block title %}Browse Books | BookBazar{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="margin-top: 100px;">
+    <div class="row mb-5 align-items-center">
+        <div class="col-md-6">
+            <h2 class="fw-bold">All Books</h2>
+            <p class="text-muted">Explore our wide collection of new and pre-loved books.</p>
+        </div>
+        <div class="col-md-6 text-md-end d-flex justify-content-md-end gap-3 align-items-center">
+            <!-- Category Filter Dropdown -->
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle rounded-pill px-3" type="button" id="categoryFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    Category: <span id="current-category">All</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="categoryFilterDropdown" id="category-filter-list">
+                    <li><a class="dropdown-item category-filter-item active" href="#" data-category="all">All Categories</a></li>
+                    {% for cat in categories %}
+                    <li><a class="dropdown-item category-filter-item" href="#" data-category="{{ cat }}">{{ cat }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Condition Filter -->
+            <div class="btn-group">
+                <button class="btn btn-outline-secondary filter-btn active" data-filter="all">All</button>
+                <button class="btn btn-outline-secondary filter-btn" data-filter="new">New</button>
+                <button class="btn btn-outline-secondary filter-btn" data-filter="pre-loved">Pre-Loved</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4" id="books-grid">
+        <!-- Dynamically populated by JS from localStorage catalog -->
+    </div>
+</div>
+{% endblock %}

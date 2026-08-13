@@ -1,0 +1,114 @@
+{% extends 'layouts/admin_base.html' %}
+
+{% block title %}
+Edit Book | Admin
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2>✏️ Edit Book: {{ book.title }}</h2>
+    <p class="text-muted mb-0">Seller: <strong class="text-white">{{ book.seller_name or 'Store' }}</strong> {% if book.seller_email %}({{ book.seller_email }}){% endif %}</p>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 p-4">
+    {% if error %}
+    <div class="alert alert-danger border-0 shadow-sm rounded-4 p-3 mb-4 text-center" style="background: rgba(220, 38, 38, 0.1); color: #dc2626;">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ error }}
+    </div>
+    {% endif %}
+
+    <form action="{{ url_for('admin_edit_book', id=book.id) }}" method="POST">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label text-muted">Book Title</label>
+                <input type="text" class="form-control" name="title" value="{{ book.title }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label text-muted">Author Name</label>
+                <input type="text" class="form-control" name="author" value="{{ book.author }}" required>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label text-muted">Category</label>
+                <select class="form-select" name="category_name" required>
+                    {% for cat in categories %}
+                        <option value="{{ cat }}" {% if cat == book.category_name %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label text-muted">Price (₹)</label>
+                <input type="number" step="0.01" class="form-control" name="price" value="{{ book.price }}" required>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label text-muted">Book Condition</label>
+                <select class="form-select" name="book_condition">
+                    <option value="New" {% if book.book_condition|lower == 'new' %}selected{% endif %}>New</option>
+                    <option value="Pre-Loved" {% if book.book_condition|lower == 'pre-loved' %}selected{% endif %}>Pre-Loved</option>
+                </select>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label text-muted">Book Cover Photo</label>
+            <input type="file" id="book-img-file" class="form-control bg-dark text-white border-secondary" accept="image/*">
+            <input type="hidden" id="book-img-base64" name="img" value="{{ book.img }}">
+            <div id="image-preview-container" class="mt-2">
+                <img id="image-preview" src="{{ book.img or 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=150' }}" class="rounded border border-secondary" style="max-height: 180px; object-fit: cover;">
+            </div>
+        </div>
+        <div class="mb-4">
+            <label class="form-label text-muted">Description</label>
+            <textarea class="form-control" name="description" rows="4">{{ book.condition_description or '' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary px-5 rounded-pill">Save Changes</button>
+        <a href="{{ url_for('admin_books') }}" class="btn btn-outline-secondary px-4 rounded-pill ms-2">Cancel</a>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('book-img-file').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        const img = new Image();
+        img.onload = function() {
+            // Resize cover image to 300x400 max dimension for efficient database storage
+            const canvas = document.createElement('canvas');
+            const max_width = 300;
+            const max_height = 400;
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > height) {
+                if (width > max_width) {
+                    height *= max_width / width;
+                    width = max_width;
+                }
+            } else {
+                if (height > max_height) {
+                    width *= max_height / height;
+                    height = max_height;
+                }
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            const base64Data = canvas.toDataURL('image/jpeg', 0.8);
+            
+            // Set value of hidden input & show preview
+            document.getElementById('book-img-base64').value = base64Data;
+            document.getElementById('image-preview').src = base64Data;
+        };
+        img.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+});
+</script>
+{% endblock %}

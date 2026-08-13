@@ -1,0 +1,200 @@
+{% extends 'layouts/admin_base.html' %}
+
+{% block title %}Admin Dashboard | BookBazar{% endblock %}
+
+{% block content %}
+
+<!-- Header Section -->
+<div class="d-flex justify-content-between align-items-center mb-5">
+    <div>
+        <h2 class="fw-bold m-0">Dashboard Overview</h2>
+        <p class="text-muted m-0 mt-1">Real-time statistics and analytics for BookBazar.</p>
+    </div>
+    <div>
+        <a href="{{ url_for('admin_export_report') }}" class="btn btn-outline-light rounded-pill px-4 me-2">
+            <i class="bi bi-download me-2"></i> Export Report
+        </a>
+        <a href="{{ url_for('admin_add_book') }}" class="btn btn-primary rounded-pill px-4" style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); border: none;">
+            <i class="bi bi-plus-lg me-2"></i> Add Book
+        </a>
+    </div>
+</div>
+
+<!-- Metrics Cards Row -->
+<div class="row g-4 mb-5">
+    <!-- Card 1 -->
+    <div class="col-md-3">
+        <div class="card dashboard-card">
+            <h5>Total Books</h5>
+            <h2>{{ total_books }}</h2>
+            <div class="card-icon-wrapper">
+                <i class="bi bi-book"></i>
+            </div>
+            <div class="trend-indicator up">
+                <i class="bi bi-arrow-up-short"></i>
+                <span>+12% this month</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="col-md-3">
+        <div class="card dashboard-card">
+            <h5>Total Orders</h5>
+            <h2>{{ total_orders }}</h2>
+            <div class="card-icon-wrapper">
+                <i class="bi bi-cart"></i>
+            </div>
+            <div class="trend-indicator up">
+                <i class="bi bi-arrow-up-short"></i>
+                <span>+8.2% this week</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="col-md-3">
+        <div class="card dashboard-card">
+            <h5>Active Users</h5>
+            <h2>{{ total_users }}</h2>
+            <div class="card-icon-wrapper">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="trend-indicator up">
+                <i class="bi bi-arrow-up-short"></i>
+                <span>+15% this week</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 4 -->
+    <div class="col-md-3">
+        <div class="card dashboard-card">
+            <h5>Total Revenue</h5>
+            <h2>₹{{ "{:,.2f}".format(total_revenue) }}</h2>
+            <div class="card-icon-wrapper">
+                <i class="bi bi-currency-rupee"></i>
+            </div>
+            <div class="trend-indicator up">
+                <i class="bi bi-arrow-up-short"></i>
+                <span>+22.4% vs last month</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Details Grid -->
+<div class="row g-4">
+    <!-- Left Column: Recent Orders -->
+    <div class="col-lg-8">
+        <div class="table-responsive-wrapper">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold m-0">Recent Orders</h4>
+                <a href="{{ url_for('admin_orders') }}" class="text-decoration-none text-primary" style="font-size: 14px; font-weight: 600;">View All Orders</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table premium-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Book Title</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in recent_orders %}
+                        <tr>
+                            <td class="fw-bold">{{ order.order_number }}</td>
+                            <td>{{ order.customer_name or 'Guest' }}</td>
+                            <td>{{ order.book_title or 'Multiple Books' }}</td>
+                            <td>₹{{ order.total_amount }}</td>
+                            <td>
+                                {% if order.status == 'Delivered' or order.status == 'Completed' %}
+                                    <span class="status-badge completed">Completed</span>
+                                {% elif order.status == 'Processing' %}
+                                    <span class="status-badge processing">Processing</span>
+                                {% elif order.status == 'Shipped' %}
+                                    <span class="status-badge processing">Shipped</span>
+                                {% else %}
+                                    <span class="status-badge pending">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No recent orders.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Quick Actions & Category Distribution -->
+    <div class="col-lg-4">
+        <!-- Quick Actions Card -->
+        <div class="action-card mb-4">
+            <h4 class="fw-bold mb-4">Quick Operations</h4>
+            <div class="d-flex flex-column">
+                <a href="{{ url_for('admin_add_book') }}" class="action-btn">
+                    <span>Add New Catalog Item</span>
+                    <i class="bi bi-arrow-right-short"></i>
+                </a>
+                <a href="{{ url_for('admin_categories') }}" class="action-btn">
+                    <span>Configure Genres & Categories</span>
+                    <i class="bi bi-arrow-right-short"></i>
+                </a>
+                <a href="{{ url_for('admin_reports') }}" class="action-btn">
+                    <span>Audit Revenue Reports</span>
+                    <i class="bi bi-arrow-right-short"></i>
+                </a>
+                <a href="{{ url_for('admin_settings') }}" class="action-btn">
+                    <span>System Settings</span>
+                    <i class="bi bi-arrow-right-short"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Category Breakdown Card -->
+        <div class="action-card">
+            <h4 class="fw-bold mb-4">Category Shares</h4>
+            
+            <div class="d-flex justify-content-between mb-1">
+                <span class="text-white-50">Fiction</span>
+                <span class="fw-semibold text-white">45%</span>
+            </div>
+            <div class="progress-bar-premium">
+                <div class="bar" style="width: 45%;"></div>
+            </div>
+
+            <div class="d-flex justify-content-between mb-1">
+                <span class="text-white-50">Programming</span>
+                <span class="fw-semibold text-white">30%</span>
+            </div>
+            <div class="progress-bar-premium">
+                <div class="bar" style="width: 30%;"></div>
+            </div>
+
+            <div class="d-flex justify-content-between mb-1">
+                <span class="text-white-50">Business</span>
+                <span class="fw-semibold text-white">15%</span>
+            </div>
+            <div class="progress-bar-premium">
+                <div class="bar" style="width: 15%;"></div>
+            </div>
+
+            <div class="d-flex justify-content-between mb-1">
+                <span class="text-white-50">Science</span>
+                <span class="fw-semibold text-white">10%</span>
+            </div>
+            <div class="progress-bar-premium">
+                <div class="bar" style="width: 10%;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends 'layouts/user_base.html' if session.get('user') == 'User' else 'base.html' %}
+
+{% block title %}Shopping Cart | BookBazar{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="margin-top:100px;">
+
+    <h2 class="fw-bold mb-4">
+        <i class="bi bi-cart3"></i> Shopping Cart
+    </h2>
+
+    <div class="row g-4">
+
+        <!-- Cart Items Container -->
+        <div class="col-lg-8" id="cart-items-container">
+            <!-- Dynamically populated by JS -->
+        </div>
+
+        <!-- Order Summary -->
+        <div class="col-lg-4" id="cart-summary-col">
+
+            <div class="card border-0 shadow rounded-4 p-4 sticky-top">
+
+                <h4 class="fw-bold mb-4">
+                    Order Summary
+                </h4>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Subtotal</span>
+                    <strong class="text-primary fw-bold" id="cart-subtotal">₹0</strong>
+                </div>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Delivery</span>
+                    <span class="text-success fw-bold">FREE</span>
+                </div>
+
+                <hr>
+
+                <div class="d-flex justify-content-between mb-4">
+                    <h5>Total</h5>
+                    <h5 class="text-primary fw-bold" id="cart-total">₹0</h5>
+                </div>
+
+                <a href="{{ url_for('checkout') }}"
+                   class="btn btn-primary w-100 py-3 rounded-pill">
+                    <i class="bi bi-credit-card"></i>
+                    Proceed to Checkout
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends 'layouts/admin_base.html' %}
+
+{% block title %}
+Manage Sellers | Admin
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>🏢 Manage Sellers</h2>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 p-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Seller ID</th>
+                    <th>Company Name</th>
+                    <th>Contact Person</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in sellers %}
+                <tr>
+                    <td>#SEL-{{ "%03d" | format(s.id) }}</td>
+                    <td><strong>{{ s.name }} Store</strong></td>
+                    <td>{{ s.name }}</td>
+                    <td>{{ s.email }}</td>
+                    <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Active ({{ s.book_count }} listed)</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No sellers found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

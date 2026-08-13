@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block title %}BookBazar | Buy New & Sell Pre-Loved Books{% endblock %}
+
+{% block content %}
+<!-- ================= HERO ================= -->
+<section class="hero">
+    <div class="hero-text">
+        <h1>
+            Every Book Deserves
+            <span>Another Reader.</span>
+        </h1>
+        <p>
+            Buy brand-new books, discover affordable pre-loved reads,
+            or sell the books you've finished.
+            Join India's growing community of passionate readers.
+        </p>
+        
+        <div>
+            {% if session.get('user') %}
+                <a class="btn btn-primary rounded-pill px-4" href="{{ url_for('books') }}">
+                    <i class="bi bi-book-half"></i> Browse Books
+                </a>
+            {% else %}
+                <a class="btn btn-primary rounded-pill px-4" href="{{ url_for('login') }}">
+                    <i class="bi bi-person-circle"></i> Login
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="hero-image">
+        <img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600" alt="Books" style="border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.15);">
+    </div>
+</section>
+
+<!-- ================= CATEGORIES ================= -->
+<section class="categories" id="categories">
+    <div class="section-title">
+        <h2>Browse Categories</h2>
+        <p>Choose your favourite genre</p>
+    </div>
+    <div class="category-grid">
+        <div class="category-card">
+            <img src="https://images.unsplash.com/photo-1474932430478-367dbb6832c1?w=200" alt="Fiction" class="rounded mb-3" style="width: 80px; height: 80px; object-fit: cover;">
+            <h4>Fiction</h4>
+            <p>1000+ Books</p>
+        </div>
+        <div class="category-card">
+            <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=200" alt="Programming" class="rounded mb-3" style="width: 80px; height: 80px; object-fit: cover;">
+            <h4>Programming</h4>
+            <p>650 Books</p>
+        </div>
+        <div class="category-card">
+            <img src="https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=200" alt="Science" class="rounded mb-3" style="width: 80px; height: 80px; object-fit: cover;">
+            <h4>Science</h4>
+            <p>450 Books</p>
+        </div>
+        <div class="category-card">
+            <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=200" alt="Business" class="rounded mb-3" style="width: 80px; height: 80px; object-fit: cover;">
+            <h4>Business</h4>
+            <p>320 Books</p>
+        </div>
+    </div>
+</section>
+
+<!-- ================= FEATURED BOOKS ================= -->
+<section class="books">
+    <div class="section-title">
+        <h2>Featured Books</h2>
+        <p>Handpicked books for you</p>
+    </div>
+    <div class="book-grid">
+        <div class="book-card">
+            <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300" alt="Atomic Habits" style="height: 320px; object-fit: cover; width: 100%;">
+            <div class="book-info">
+                <h3>Atomic Habits</h3>
+                <p>James Clear</p>
+                <div class="price">₹499</div>
+                {% if session.get('user') %}
+                <a href="#" class="book-btn add-to-cart-btn" 
+                   data-id="1" 
+                   data-title="Atomic Habits" 
+                   data-price="499" 
+                   data-img="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300" 
+                   data-author="James Clear">
+                    Add to Cart
+                </a>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="book-btn">
+                    Login to Buy
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="book-card">
+            <img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300" alt="Deep Work" style="height: 320px; object-fit: cover; width: 100%;">
+            <div class="book-info">
+                <h3>Deep Work</h3>
+                <p>Cal Newport</p>
+                <div class="price">₹399</div>
+                {% if session.get('user') %}
+                <a href="#" class="book-btn add-to-cart-btn" 
+                   data-id="2" 
+                   data-title="Deep Work" 
+                   data-price="399" 
+                   data-img="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300" 
+                   data-author="Cal Newport">
+                    Add to Cart
+                </a>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="book-btn">
+                    Login to Buy
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="book-card">
+            <img src="https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300" alt="Rich Dad Poor Dad" style="height: 320px; object-fit: cover; width: 100%;">
+            <div class="book-info">
+                <h3>Rich Dad Poor Dad</h3>
+                <p>Robert Kiyosaki</p>
+                <div class="price">₹299</div>
+                {% if session.get('user') %}
+                <a href="#" class="book-btn add-to-cart-btn" 
+                   data-id="3" 
+                   data-title="Rich Dad Poor Dad" 
+                   data-price="299" 
+                   data-img="https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300" 
+                   data-author="Robert Kiyosaki">
+                    Add to Cart
+                </a>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="book-btn">
+                    Login to Buy
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="book-card">
+            <img src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=300" alt="The Psychology of Money" style="height: 320px; object-fit: cover; width: 100%;">
+            <div class="book-info">
+                <h3>The Psychology of Money</h3>
+                <p>Morgan Housel</p>
+                <div class="price">₹599</div>
+                {% if session.get('user') %}
+                <a href="#" class="book-btn add-to-cart-btn" 
+                   data-id="4" 
+                   data-title="The Psychology of Money" 
+                   data-price="599" 
+                   data-img="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=300" 
+                   data-author="Morgan Housel">
+                    Add to Cart
+                </a>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="book-btn">
+                    Login to Buy
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= WHY CHOOSE US ================= -->
+<section class="features">
+    <div class="section-title">
+        <h2>Why Choose BookBazar?</h2>
+    </div>
+    <div class="feature-grid">
+        <div class="feature">
+            <i class="bi bi-book-half text-primary"></i>
+            <h3>10,000+ Books</h3>
+            <p>New & pre-loved books from every genre.</p>
+        </div>
+        <div class="feature">
+            <i class="bi bi-truck text-primary"></i>
+            <h3>Fast Delivery</h3>
+            <p>Reliable shipping across India.</p>
+        </div>
+        <div class="feature">
+            <i class="bi bi-currency-rupee text-primary"></i>
+            <h3>Affordable Prices</h3>
+            <p>Save money with quality second-hand books.</p>
+        </div>
+        <div class="feature">
+            <i class="bi bi-shield-check text-primary"></i>
+            <h3>Secure Payments</h3>
+            <p>Safe and trusted transactions.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

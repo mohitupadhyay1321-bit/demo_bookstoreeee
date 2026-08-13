@@ -1,0 +1,143 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+*{
+
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Plus Jakarta Sans',sans-serif;
+
+}
+
+h1, h2, h3, h4, h5, h6, .logo {
+    font-family: 'Outfit', sans-serif;
+}
+
+body{
+
+background: #0d1f30;
+
+}
+
+.left-side{
+
+background: radial-gradient(circle,
+        rgba(0, 200, 255, 0.45),
+        rgba(108, 99, 255, 0.35),
+        transparent 70%);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+position:relative;
+
+}
+
+.overlay{
+
+text-align:center;
+padding:50px;
+
+}
+
+.overlay h1{
+
+font-size:60px;
+font-weight:700;
+
+}
+
+.overlay h3{
+
+margin:20px 0;
+
+}
+
+.overlay p{
+
+font-size:18px;
+line-height:30px;
+
+}
+
+.login-card{
+
+width:420px;
+background: linear-gradient(270deg, #574fd1, #56acbd, #41937f);
+padding:40px;
+border-radius:20px;
+box-shadow:0 20px 60px rgba(0,0,0,.15);
+
+}
+
+.login-card h2{
+
+font-weight:700;
+
+}
+
+.login-card p{
+
+color:gray;
+margin-bottom:30px;
+
+}
+
+.input-group-text{
+
+background:white;
+
+}
+
+.form-control{
+
+height:50px;
+
+}
+
+.form-control:focus{
+
+box-shadow:none;
+border-color:#4F46E5;
+
+}
+
+.login-btn{
+
+width:100%;
+height:50px;
+border-radius:10px;
+background: #0d1f30;
+color:white;
+font-weight:600;
+
+}
+
+.login-btn:hover{
+
+background: #000000;
+color:white;
+
+}
+
+a{
+
+text-decoration:none;
+
+}
+
+hr{
+
+margin:25px 0;
+
+}
+
+@media(max-width:992px){
+
+.login-card{
+
+width:90%;
+
+}
+
+}

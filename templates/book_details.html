@@ -1,0 +1,111 @@
+{% extends 'layouts/user_base.html' if session.get('user') == 'User' else 'base.html' %}
+
+{% block title %}Book Details | BookBazar{% endblock %}
+
+{% block content %}
+{# Set mapping details for books 1 to 8 #}
+{% set title_map = {1: "Atomic Habits", 2: "Deep Work", 3: "Rich Dad Poor Dad", 4: "The Psychology of Money", 5: "The Alchemist", 6: "Zero to One", 7: "Thinking, Fast and Slow", 8: "Steve Jobs"} %}
+{% set price_map = {1: 499, 2: 399, 3: 299, 4: 599, 5: 149, 6: 199, 7: 249, 8: 299} %}
+{% set author_map = {1: "James Clear", 2: "Cal Newport", 3: "Robert Kiyosaki", 4: "Morgan Housel", 5: "Paulo Coelho", 6: "Peter Thiel", 7: "Daniel Kahneman", 8: "Walter Isaacson"} %}
+{% set img_map = {
+    1: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300", 
+    2: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300", 
+    3: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300", 
+    4: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=300",
+    5: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=300",
+    6: "https://images.unsplash.com/photo-1531988042231-d39a9cc12a9a?w=300",
+    7: "https://images.unsplash.com/photo-1495640388908-05fa85288e61?w=300",
+    8: "https://images.unsplash.com/photo-1541963463532-d68292c34b19?w=300"
+} %}
+
+{# Hidden trigger for JavaScript dynamic loader for user-created book IDs #}
+{% if id > 8 %}
+<div id="dynamic-book-details-anchor"></div>
+<script>
+    window.currentBookId = {{ id }};
+</script>
+{% endif %}
+
+<div class="container py-5" style="margin-top: 100px;">
+    <div class="row g-5">
+        <!-- Book Image -->
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <img src="{{ img_map.get(id, '') }}" class="img-fluid" id="detail-image" alt="{{ title_map.get(id, '') }}" style="max-height: 500px; object-fit: cover; width: 100%;">
+            </div>
+        </div>
+        
+        <!-- Book Details -->
+        <div class="col-md-7">
+            <h1 class="fw-bold mb-2" id="detail-title">{{ title_map.get(id, '') }}</h1>
+            <h4 class="text-muted mb-4" id="detail-author">{{ author_map.get(id, '') }}</h4>
+            <div class="fs-3 fw-bold text-primary mb-4" id="detail-price">₹{{ price_map.get(id, '') }}</div>
+            
+            <p class="lead text-muted mb-4" id="detail-description">
+                {% if id == 1 %}
+                    An easy & proven way to build good habits & break bad ones. Tiny Changes, Remarkable Results.
+                {% elif id == 2 %}
+                    Rules for Focused Success in a Distracted World. Master difficult skills quickly and produce better results in less time.
+                {% elif id == 3 %}
+                    What the Rich Teach Their Kids About Money That the Poor and Middle Class Do Not!
+                {% elif id == 4 %}
+                    Timeless lessons on wealth, greed, and happiness. Doing well with money isn't necessarily about what you know. It's about how you behave.
+                {% elif id == 5 %}
+                    A beautiful story about following your dreams. Highly inspiring fable about a shepherd boy who travels in search of worldly treasures.
+                {% elif id == 6 %}
+                    Notes on Startups, or How to Build the Future. Learn how to discover new ways of creating value to go from 0 to 1.
+                {% elif id == 7 %}
+                    A deep exploration of the two systems that drive our way of thinking: System 1 (fast/intuitive) and System 2 (slow/logical).
+                {% elif id == 8 %}
+                    The exclusive biography of the creative entrepreneur who revolutionized the technology industry. Based on more than forty interviews.
+                {% endif %}
+            </p>
+            
+            <div class="d-flex gap-3 mb-5">
+                {% if session.get('user') %}
+                <a href="#" class="btn btn-primary btn-lg rounded-pill px-5 add-to-cart-btn" 
+                   data-id="{{ id }}"
+                   data-title="{{ title_map.get(id, '') }}"
+                   data-price="{{ price_map.get(id, '') }}"
+                   data-img="{{ img_map.get(id, '') }}"
+                   data-author="{{ author_map.get(id, '') }}">
+                   Add to Cart
+                </a>
+                <a href="#" class="btn btn-outline-secondary btn-lg rounded-pill px-4 add-to-wishlist-btn"
+                   data-id="{{ id }}"
+                   data-title="{{ title_map.get(id, '') }}"
+                   data-price="{{ price_map.get(id, '') }}"
+                   data-img="{{ img_map.get(id, '') }}"
+                   data-author="{{ author_map.get(id, '') }}">
+                    <i class="bi bi-heart"></i>
+                </a>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg rounded-pill px-5">
+                   Login to Buy
+                </a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg rounded-pill px-4">
+                    <i class="bi bi-heart"></i>
+                </a>
+                {% endif %}
+            </div>
+            
+            <hr class="my-5">
+            
+            <div class="row text-center text-md-start">
+                <div class="col-md-4 mb-3">
+                    <div class="small text-muted">Condition</div>
+                    <div class="fw-bold fs-5" id="detail-condition">{% if id >= 5 %}Pre-Loved{% else %}New{% endif %}</div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="small text-muted">Availability</div>
+                    <div class="fw-bold fs-5 text-success">In Stock</div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="small text-muted">Shipping</div>
+                    <div class="fw-bold fs-5">Free Delivery</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

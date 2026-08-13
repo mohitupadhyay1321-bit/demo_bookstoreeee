@@ -1,0 +1,77 @@
+{% extends 'layouts/user_base.html' if session.get('user') == 'User' else 'base.html' %}
+
+{% block title %}Sell Your Book | BookBazar{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="margin-top: 100px;">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow rounded-4 p-5">
+                <div class="text-center mb-4">
+                    <h2 class="fw-bold">Sell Your Book 📖</h2>
+                    <p class="text-muted">Fill in the details to list your pre-loved book for other readers.</p>
+                </div>
+                
+                <form id="sell-book-form">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Book Title</label>
+                            <input type="text" class="form-control" id="sell-title" placeholder="e.g. Harry Potter" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Author</label>
+                            <input type="text" class="form-control" id="sell-author" placeholder="e.g. J.K. Rowling" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Genre/Category</label>
+                            <select class="form-select" id="sell-category">
+                                <option selected disabled>Select category</option>
+                                {% for cat in categories %}
+                                <option>{{ cat }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Selling Price (₹)</label>
+                            <input type="number" class="form-control" id="sell-price" placeholder="e.g. 199" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Original Price (optional)</label>
+                        <input type="number" class="form-control" id="sell-original-price" placeholder="e.g. 499">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Book Cover Image</label>
+                        <input type="file" class="form-control" id="sell-img-file" accept="image/*" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Condition Description</label>
+                        <select class="form-select mb-2" id="sell-condition">
+                            <option>Like New (No marks, pages clean)</option>
+                            <option>Good (Minor wear, pages readable)</option>
+                            <option>Acceptable (Spine worn, visible creases)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label text-muted">Additional Notes</label>
+                        <textarea class="form-control" id="sell-notes" rows="3" placeholder="Tell buyers more about the book..."></textarea>
+                    </div>
+                    
+                    {% if session.get('user') %}
+                    <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill">List Book for Sale</button>
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg w-100 rounded-pill text-center d-block">Login to List Book</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

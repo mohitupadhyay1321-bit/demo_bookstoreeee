@@ -1,0 +1,77 @@
+{% extends 'layouts/admin_base.html' %}
+
+{% block title %}
+Manage Books | Admin
+{% endblock %}
+
+{% block content %}
+{% if request.args.get('success') == 'true' %}
+<div class="alert alert-success border-0 shadow-sm rounded-4 p-3 mb-4 text-center" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+    <i class="bi bi-patch-check-fill me-2"></i> Book added/saved successfully!
+</div>
+{% endif %}
+
+<div class="d-flex justify-content-between align-items-center mb-5">
+    <h2>📚 Manage Books & Submissions</h2>
+    <a href="{{ url_for('admin_add_book') }}" class="btn btn-primary rounded-pill px-4">
+        <i class="bi bi-plus-lg"></i> Add New Book
+    </a>
+</div>
+
+<!-- Section 1: Pending Listings requiring Approval -->
+<div class="mb-5">
+    <h4 class="fw-bold mb-3 text-warning"><i class="bi bi-clock-history"></i> Pending Approval Submissions</h4>
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-dark">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th class="text-muted">Cover</th>
+                        <th class="text-muted">Title</th>
+                        <th class="text-muted">Author</th>
+                        <th class="text-muted">Seller</th>
+                        <th class="text-muted">Price</th>
+                        <th class="text-muted">Type</th>
+                        <th class="text-muted">Status</th>
+                        <th class="text-muted">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-pending-books-table-body">
+                    <!-- Loaded dynamically from LocalStorage -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Section 2: Active Shop Catalog -->
+<div>
+    <h4 class="fw-bold mb-3 text-success"><i class="bi bi-check-circle"></i> Active Shop Books</h4>
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-dark">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th class="text-muted">Cover</th>
+                        <th class="text-muted">Title</th>
+                        <th class="text-muted">Author</th>
+                        <th class="text-muted">Seller</th>
+                        <th class="text-muted">Price</th>
+                        <th class="text-muted">Type</th>
+                        <th class="text-muted">Status</th>
+                        <th class="text-muted">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-active-books-table-body">
+                    <!-- Loaded dynamically from LocalStorage -->
+                </tbody>
+            </table>
+        </div>
+        <div class="text-end mt-3" id="view-all-books-container" style="display: none;">
+            <button class="btn btn-sm btn-outline-primary rounded-pill px-3" id="btn-view-all-books">
+                <i class="bi bi-eye"></i> View All Books
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

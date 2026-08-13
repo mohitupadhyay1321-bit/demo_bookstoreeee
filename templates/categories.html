@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Categories | BookBazar{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="margin-top: 100px;">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold">Browse Genres</h2>
+        <p class="text-muted">Discover books in your favorite category</p>
+    </div>
+    
+    <div class="row g-4">
+        {% set images = {
+            'Fiction': 'https://images.unsplash.com/photo-1474932430478-367dbb6832c1?w=200',
+            'Programming': 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=200',
+            'Science': 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=200',
+            'Business': 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=200',
+            'Biography': 'https://m.media-amazon.com/images/I/51XynmcertL._AC_UF1000,1000_QL80_.jpg'
+        } %}
+
+        {% for c in categories %}
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-4 text-center">
+                {% set img_src = images.get(c.name, 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=200') %}
+                <img src="{{ img_src }}" alt="{{ c.name }}" class="rounded-circle mb-3 mx-auto" style="width: 100px; height: 100px; object-fit: cover;">
+                <h4 class="fw-bold">{{ c.name }}</h4>
+                <p class="text-muted small">{{ c.book_count }} books listed</p>
+                <a href="{{ url_for('books', category=c.name) }}" class="btn btn-outline-primary btn-sm rounded-pill px-4 mt-2">Browse</a>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center text-muted">
+            <p>No categories found.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

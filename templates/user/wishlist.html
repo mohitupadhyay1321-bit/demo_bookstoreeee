@@ -1,0 +1,13 @@
+{% extends 'layouts/user_base.html' if session.get('user') == 'User' else 'base.html' %}
+
+{% block title %}My Wishlist | BookBazar{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="margin-top: 100px;">
+    <h2 class="fw-bold mb-4">❤️ My Wishlist</h2>
+    
+    <div class="row g-4" id="wishlist-container">
+        <!-- Dynamically populated by JS -->
+    </div>
+</div>
+{% endblock %}

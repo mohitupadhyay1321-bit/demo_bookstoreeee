@@ -1,0 +1,51 @@
+{% extends 'layouts/admin_base.html' %}
+
+{% block title %}
+Settings | Admin
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>⚙️ Admin Settings</h2>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h5 class="mb-4">General Configuration</h5>
+            <form>
+                <div class="mb-3">
+                    <label class="form-label text-muted">Store Name</label>
+                    <input type="text" class="form-control" value="BookBazar" disabled>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">Support Email Address</label>
+                    <input type="email" class="form-control" value="support@bookbazar.com">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">Contact Number</label>
+                    <input type="text" class="form-control" value="+91 9876543210">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label text-muted">Currency Code</label>
+                    <select class="form-select">
+                        <option value="INR" selected>INR (₹)</option>
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" onclick="event.preventDefault(); alert('Settings saved successfully (Mock)!');">Save Settings</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+            <h5 class="mb-3 text-danger"><i class="bi bi-shield-lock"></i> Security settings</h5>
+            <p class="small text-muted">Modify default system keys and variables.</p>
+            <button class="btn btn-outline-danger w-100 mb-2">Change password</button>
+            <button class="btn btn-outline-secondary w-100">Setup 2FA Authentication</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

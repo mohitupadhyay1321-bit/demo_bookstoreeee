@@ -1,0 +1,282 @@
+{% extends 'layouts/user_base.html' %}
+
+{% block title %}User Dashboard | BookBazar{% endblock %}
+
+{% block content %}
+<!-- Welcome Header -->
+<div class="mb-4">
+    <h2 class="fw-bold mb-1 text-white">Hello, {{ session.get('user_name') or session.get('user') }}! 👋</h2>
+    <p class="text-muted mb-0">Welcome back to your reader and seller workspace.</p>
+</div>
+
+<!-- Stats Row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 p-4 h-100" style="background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%); border-left: 5px solid var(--accent) !important;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3 fs-3">
+                    <i class="bi bi-bag-check"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted small mb-1">Total Orders</h6>
+                    <h3 class="fw-bold text-white mb-0">3</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 p-4 h-100" style="background: linear-gradient(135deg, #1e1b4b 0%, #102e3a 100%); border-left: 5px solid #00D4FF !important;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-info bg-opacity-10 text-info rounded-circle p-3 fs-3">
+                    <i class="bi bi-book"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted small mb-1">My Listings</h6>
+                    <h3 class="fw-bold text-white mb-0" id="stats-my-listings-count">0</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 p-4 h-100" style="background: linear-gradient(135deg, #1e1b4b 0%, #2e102f 100%); border-left: 5px solid #6C63FF !important;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-3 fs-3">
+                    <i class="bi bi-heart"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted small mb-1">Wishlist</h6>
+                    <h3 class="fw-bold text-white mb-0">4</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 p-4 h-100" style="background: linear-gradient(135deg, #1e1b4b 0%, #123325 100%); border-left: 5px solid #00C896 !important;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 fs-3">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted small mb-1">Wallet</h6>
+                    <h3 class="fw-bold text-white mb-0">₹450</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Side: Large Analytics & Orders -->
+    <div class="col-lg-8">
+        <!-- Sell Analytics Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+            <h5 class="fw-bold mb-4 text-white"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Detailed Sell Analytics</h5>
+            
+            <!-- Larger Graphical Chart -->
+            <div class="mb-4" style="height: 240px; position: relative;">
+                <canvas id="salesChart"></canvas>
+            </div>
+            
+            <!-- Expanded Detailed Metrics Row -->
+            <div class="row text-center mt-3 g-3">
+                <div class="col-6 col-md-3 border-end border-secondary">
+                    <div class="text-muted small">Total Revenue</div>
+                    <h4 class="fw-bold text-success mt-1">₹398</h4>
+                </div>
+                <div class="col-6 col-md-3 border-end border-secondary">
+                    <div class="text-muted small">Books Sold</div>
+                    <h4 class="fw-bold text-white mt-1">2</h4>
+                </div>
+                <div class="col-6 col-md-3 border-end border-secondary">
+                    <div class="text-muted small">Avg Order Value</div>
+                    <h4 class="fw-bold text-white mt-1">₹199</h4>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="text-muted small">Listing Views</div>
+                    <h4 class="fw-bold text-info mt-1">1,420</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Orders Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h5 class="fw-bold mb-4 text-white"><i class="bi bi-receipt text-primary me-2"></i>Recent Orders</h5>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead>
+                        <tr class="text-muted">
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#ORD-8942</td>
+                            <td>Aug 04, 2026</td>
+                            <td>Atomic Habits, Deep Work</td>
+                            <td>₹898</td>
+                            <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Delivered</span></td>
+                        </tr>
+                        <tr>
+                            <td>#ORD-7391</td>
+                            <td>Jul 28, 2026</td>
+                            <td>Rich Dad Poor Dad</td>
+                            <td>₹299</td>
+                            <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Delivered</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- My Submissions Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mt-4">
+            <h5 class="fw-bold mb-4 text-white"><i class="bi bi-book-half text-primary me-2"></i>My Book Listings & Submissions</h5>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead>
+                        <tr class="text-muted">
+                            <th>Cover</th>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Price</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-submissions-table-body">
+                        <!-- Loaded dynamically from LocalStorage -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Side: Profile Card & Sales Log -->
+    <div class="col-lg-4">
+        <!-- Profile Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+            <div class="text-center mb-4">
+                {% if session.get('user_avatar') %}
+                    <img src="{{ session.get('user_avatar') }}" alt="Avatar" class="rounded-circle shadow-sm mb-3 border border-3 border-secondary" style="width: 120px; height: 120px; object-fit: cover;">
+                {% else %}
+                    <img src="https://i.pravatar.cc/120?u={{ session.get('user_email') }}" alt="Avatar" class="rounded-circle shadow-sm mb-3 border border-3 border-secondary" style="width: 120px; height: 120px; object-fit: cover;">
+                {% endif %}
+                <h5 class="fw-bold text-white mb-1">{{ session.get('user_name') or 'User' }}</h5>
+                <p class="text-muted small">Member since July 2026</p>
+            </div>
+            <hr class="border-secondary">
+            <div class="text-start">
+                <div class="small text-muted mb-1">Account Role</div>
+                <div class="fw-bold text-white mb-3">Verified Seller & Buyer</div>
+                <div class="small text-muted mb-1">Wallet Balance</div>
+                <div class="fw-bold text-success">₹450</div>
+            </div>
+        </div>
+
+        <!-- Recent Sales Log Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h6 class="fw-bold text-white mb-4"><i class="bi bi-clock-history text-primary me-2"></i>Recent Sales Log</h6>
+            <div class="d-flex flex-column gap-3">
+                <div class="p-3 rounded bg-dark bg-opacity-50">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-bold text-white small">Deep Work</span>
+                        <span class="badge bg-success bg-opacity-10 text-success small" style="font-size: 0.75rem;">Completed</span>
+                    </div>
+                    <div class="text-muted small mb-2" style="font-size: 0.8rem;">Buyer: Rohan Sharma</div>
+                    <div class="d-flex justify-content-between text-muted small" style="font-size: 0.8rem;">
+                        <span>Earnings: ₹199</span>
+                        <span>Aug 01, 2026</span>
+                    </div>
+                </div>
+                <div class="p-3 rounded bg-dark bg-opacity-50">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-bold text-white small">Rich Dad Poor Dad</span>
+                        <span class="badge bg-success bg-opacity-10 text-success small" style="font-size: 0.75rem;">Completed</span>
+                    </div>
+                    <div class="text-muted small mb-2" style="font-size: 0.8rem;">Buyer: Aanya Gupta</div>
+                    <div class="d-flex justify-content-between text-muted small" style="font-size: 0.8rem;">
+                        <span>Earnings: ₹199</span>
+                        <span>Jul 25, 2026</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    
+    // Create subtle glow gradient for line fill
+    const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+    gradient.addColorStop(0, 'rgba(156, 67, 107, 0.4)');
+    gradient.addColorStop(1, 'rgba(156, 67, 107, 0.0)');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['May', 'Jun', 'Jul', 'Aug'],
+            datasets: [{
+                label: 'Sales (₹)',
+                data: [120, 240, 199, 398],
+                borderColor: '#9c436b',
+                borderWidth: 3,
+                backgroundColor: gradient,
+                fill: true,
+                tension: 0.38,
+                pointBackgroundColor: '#9c436b',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 1.8,
+                pointRadius: 5,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        font: {
+                            family: 'Plus Jakarta Sans',
+                            size: 11
+                        }
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.04)'
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        font: {
+                            family: 'Plus Jakarta Sans',
+                            size: 11
+                        },
+                        callback: function(value) {
+                            return '₹' + value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

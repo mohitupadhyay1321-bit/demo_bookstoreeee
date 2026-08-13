@@ -1,0 +1,49 @@
+<div class="sidebar">
+    <div class="logo">
+        <h3>📚 BookBazar</h3>
+    </div>
+    <ul>
+        <li>
+            <a href="{{ url_for('profile') }}">
+                <i class="bi bi-speedometer2"></i>
+                Dashboard
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('profile_details') }}">
+                <i class="bi bi-person-fill"></i>
+                My Profile
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('books') }}">
+                <i class="bi bi-book"></i>
+                Browse Books
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('sell_book') }}">
+                <i class="bi bi-plus-circle"></i>
+                Sell Book
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('wishlist') }}" class="d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-heart"></i> My Wishlist</span>
+                <span class="badge rounded-pill bg-danger" id="sidebar-wishlist-badge" style="display: none;">0</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('cart') }}" class="d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-cart3"></i> My Cart</span>
+                <span class="badge rounded-pill bg-danger" id="sidebar-cart-badge" style="display: none;">0</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('logout') }}">
+                <i class="bi bi-box-arrow-right"></i>
+                Logout
+            </a>
+        </li>
+    </ul>
+</div>

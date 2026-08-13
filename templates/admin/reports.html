@@ -1,0 +1,157 @@
+{% extends 'layouts/admin_base.html' %}
+
+{% block title %}
+Reports | Admin
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>📊 Sales & Reports</h2>
+    <a href="{{ url_for('admin_export_report') }}" class="btn btn-primary rounded-pill px-4" style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); border: none;">
+        <i class="bi bi-download me-2"></i> Export CSV Report
+    </a>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4" style="background: var(--card-bg); border: 1px solid var(--border-color);">
+            <h5 class="card-title text-muted mb-3">Sales Over Time</h5>
+            <div style="height: 300px; position: relative;">
+                <canvas id="salesChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4" style="background: var(--card-bg); border: 1px solid var(--border-color);">
+            <h5 class="card-title text-muted mb-3">Popular Categories</h5>
+            <div style="height: 300px; position: relative;">
+                <canvas id="categoriesChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 p-4" style="background: var(--card-bg); border: 1px solid var(--border-color);">
+    <h5 class="mb-3">Recent Report Actions</h5>
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item d-flex justify-content-between align-items-center px-0 border-secondary">
+            <span class="text-white">Monthly Income Statement</span>
+            <a href="{{ url_for('admin_export_income_statement') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3"><i class="bi bi-download me-1"></i> Download CSV</a>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center px-0 border-secondary">
+            <span class="text-white">Second-hand Book Trade Inventory Audit</span>
+            <a href="{{ url_for('admin_export_inventory_audit') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3"><i class="bi bi-download me-1"></i> Download CSV</a>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center px-0 border-secondary">
+            <span class="text-white">Active Seller Verification Status</span>
+            <a href="{{ url_for('admin_export_seller_verification') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3"><i class="bi bi-download me-1"></i> Download CSV</a>
+        </li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Data passed from Flask
+    const salesDates = {{ sales_dates | tojson }};
+    const salesRevenues = {{ sales_revenues | tojson }};
+    const categoryNames = {{ category_names | tojson }};
+    const categorySales = {{ category_sales | tojson }};
+
+    // 1. Sales Chart
+    const salesCtx = document.getElementById('salesChart');
+    if (salesCtx) {
+        if (salesDates.length === 0) {
+            salesCtx.parentElement.innerHTML = `
+                <div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted">
+                    <i class="bi bi-graph-up-arrow display-4 mb-2 text-primary"></i>
+                    <span>No sales data available yet.</span>
+                </div>
+            `;
+        } else {
+            new Chart(salesCtx, {
+                type: 'line',
+                data: {
+                    labels: salesDates,
+                    datasets: [{
+                        label: 'Daily Revenue (₹)',
+                        data: salesRevenues,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '₹' + context.raw;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.08)' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // 2. Categories Chart
+    const catCtx = document.getElementById('categoriesChart');
+    if (catCtx) {
+        if (categoryNames.length === 0) {
+            catCtx.parentElement.innerHTML = `
+                <div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted">
+                    <i class="bi bi-pie-chart display-4 mb-2 text-secondary"></i>
+                    <span>No sales by category yet.</span>
+                </div>
+            `;
+        } else {
+            new Chart(catCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: categoryNames,
+                    datasets: [{
+                        data: categorySales,
+                        backgroundColor: [
+                            '#6366f1', '#a855f7', '#ec4899', '#f43f5e', '#10b981', '#f59e0b'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#94a3b8',
+                                padding: 15,
+                                font: { size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

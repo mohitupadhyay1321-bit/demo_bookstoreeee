@@ -1,0 +1,498 @@
+/* ================================
+   BOOKBAZAR - Premium Admin Panel
+==================================*/
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --bg-dark: #070913;
+    --sidebar-bg: #0f1322;
+    --card-bg: rgba(20, 26, 46, 0.7);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --primary-glow: #6366f1;
+    --accent: #a855f7;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6, .logo {
+    font-family: 'Outfit', sans-serif;
+    color: var(--text-main);
+}
+
+body {
+    background: var(--bg-dark);
+    color: var(--text-main);
+    overflow-x: hidden;
+}
+
+.wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+/*==========================
+ SIDEBAR
+==========================*/
+
+.sidebar {
+    width: 260px;
+    height: 100vh;
+    position: fixed;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    color: var(--text-main);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.logo {
+    padding: 25px 20px;
+    font-size: 24px;
+    font-weight: 800;
+    border-bottom: 1px solid var(--border-color);
+    letter-spacing: 0.5px;
+}
+
+.logo span {
+    color: var(--accent);
+}
+
+.sidebar ul {
+    list-style: none;
+    padding: 20px 12px;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.sidebar li {
+    margin-bottom: 8px;
+}
+
+.sidebar a {
+    color: var(--text-muted);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.sidebar a i {
+    font-size: 1.1rem;
+    transition: transform 0.3s ease;
+}
+
+.sidebar a:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.03);
+    padding-left: 20px;
+}
+
+.sidebar a:hover i {
+    transform: scale(1.1);
+}
+
+/* Active State indicator - Premium Glow */
+.sidebar a.active {
+    color: #ffffff;
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.05) 100%);
+    box-shadow: inset 0 0 12px rgba(99, 102, 241, 0.1);
+}
+
+.sidebar a.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 15%;
+    height: 70%;
+    width: 4px;
+    background: linear-gradient(180deg, var(--primary-glow) 0%, var(--accent) 100%);
+    border-radius: 0 4px 4px 0;
+    box-shadow: 0 0 10px var(--primary-glow);
+}
+
+.sidebar a.active i {
+    color: var(--primary-glow);
+}
+
+/*==========================
+ TOP NAVIGATION
+==========================*/
+
+.main {
+    margin-left: 260px;
+    width: calc(100% - 260px);
+    display: flex;
+    flex-direction: column;
+}
+
+.topbar {
+    background: rgba(15, 19, 34, 0.6);
+    backdrop-filter: blur(15px);
+    height: 75px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 999;
+}
+
+.topbar h4 {
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.profile {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+.profile .notification-bell {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.2s;
+    position: relative;
+}
+
+.profile .notification-bell:hover {
+    color: var(--text-main);
+}
+
+.profile .notification-bell::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 6px;
+    height: 6px;
+    background: var(--danger);
+    border-radius: 50%;
+}
+
+.profile img {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+/*==========================
+ CONTENT CONTAINER
+==========================*/
+
+.content {
+    padding: 40px;
+    flex-grow: 1;
+}
+
+/*==========================
+ DASHBOARD PREMIUM CARDS
+==========================*/
+
+.dashboard-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color) !important;
+    border-radius: 20px;
+    padding: 26px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-card::after {
+    content: '';
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+    bottom: -50px;
+    right: -50px;
+    border-radius: 50%;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(99, 102, 241, 0.25) !important;
+    box-shadow: 0 15px 35px rgba(99, 102, 241, 0.1);
+}
+
+.dashboard-card h5 {
+    color: var(--text-muted);
+    font-size: 15px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+.dashboard-card h2 {
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+
+.card-icon-wrapper {
+    position: absolute;
+    top: 26px;
+    right: 26px;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    color: var(--primary-glow);
+    font-size: 1.3rem;
+}
+
+.trend-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.trend-indicator.up {
+    color: var(--success);
+}
+
+.trend-indicator.down {
+    color: var(--danger);
+}
+
+/*==========================
+ TABLE STYLING
+==========================*/
+
+.table-responsive-wrapper {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.premium-table {
+    margin-bottom: 0;
+    color: var(--text-main);
+}
+
+.premium-table th {
+    background: transparent !important;
+    color: var(--text-muted);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 16px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.premium-table td {
+    background: transparent !important;
+    color: var(--text-main);
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 18px 16px;
+    vertical-align: middle;
+    font-size: 15px;
+}
+
+.premium-table tr:last-child td {
+    border-bottom: none !important;
+}
+
+.status-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-badge.completed {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--success);
+}
+
+.status-badge.pending {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--warning);
+}
+
+.status-badge.processing {
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--primary-glow);
+}
+
+.status-badge.cancelled {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--danger);
+}
+
+/*==========================
+ ACTIONS & PANELS
+==========================*/
+
+.action-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 24px;
+    height: 100%;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    text-decoration: none;
+    margin-bottom: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
+    border-color: rgba(99, 102, 241, 0.3);
+    color: #ffffff;
+    transform: translateX(4px);
+}
+
+.action-btn i {
+    color: var(--primary-glow);
+}
+
+.progress-bar-premium {
+    height: 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    margin-top: 8px;
+    margin-bottom: 20px;
+}
+
+.progress-bar-premium .bar {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--primary-glow) 0%, var(--accent) 100%);
+}
+
+/* Form Styles for other Admin pages */
+.form-control, .form-select {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-main) !important;
+    border-radius: 12px !important;
+    padding: 12px 16px !important;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-glow) !important;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15) !important;
+}
+
+.form-select option {
+    background-color: var(--sidebar-bg) !important;
+    color: var(--text-main) !important;
+}
+/* Global Dark Theme Element Overrides */
+.card {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-main) !important;
+}
+
+.table {
+    color: var(--text-main) !important;
+}
+
+.table th, .table td {
+    background: transparent !important;
+    color: var(--text-main) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+.table-light {
+    --bs-table-bg: rgba(255, 255, 255, 0.05) !important;
+    --bs-table-color: var(--text-main) !important;
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: var(--text-main) !important;
+}
+
+thead.table-light th {
+    color: var(--text-muted) !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+.table-hover tbody tr:hover td {
+    background-color: rgba(255, 255, 255, 0.02) !important;
+    color: #ffffff !important;
+}
+
+strong, .fw-bold {
+    color: #ffffff !important;
+}
+
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
+.text-dark {
+    color: var(--text-main) !important;
+}
+
+.form-label, label {
+    color: var(--text-muted) !important;
+}
+
+.list-group-item {
+    background-color: transparent !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
+}
+
+.topbar {
+    background: var(--sidebar-bg) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    color: var(--text-main) !important;
+}
+
+.topbar h4 {
+    color: var(--text-main) !important;
+}

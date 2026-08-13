@@ -1,0 +1,47 @@
+{% extends 'layouts/admin_base.html' %}
+
+{% block title %}
+Manage Users | Admin
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>👥 Manage Users</h2>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 p-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>User ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>#USR-{{ "%03d" | format(u.id) }}</td>
+                    <td><strong>{{ u.name }}</strong></td>
+                    <td>{{ u.email }}</td>
+                    <td>{{ u.role }}</td>
+                    <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Active</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-secondary" {% if u.role == 'Admin' %}disabled{% endif %}><i class="bi bi-shield"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" {% if u.role == 'Admin' %}disabled{% endif %}><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No users found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

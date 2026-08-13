@@ -1,0 +1,65 @@
+{% extends 'layouts/user_base.html' if session.get('user') == 'User' else 'base.html' %}
+
+{% block title %}Contact Us | BookBazar{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="margin-top: 100px;">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold">Contact Us</h2>
+        <p class="text-muted">Have a question or feedback? We'd love to hear from you!</p>
+    </div>
+    
+    <div class="row g-5">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 p-5 h-100">
+                <h4 class="fw-bold mb-4">Send a Message</h4>
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Full Name</label>
+                        <input type="text" class="form-control" placeholder="Enter Full Name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Email Address</label>
+                        <input type="email" class="form-control" placeholder="Enter Email" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-muted">Message</label>
+                        <textarea class="form-control" rows="5" placeholder="Your Message..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5" onclick="event.preventDefault(); alert('Message sent successfully!');">Send Message</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 p-5 h-100" style="background: #111114;">
+                <h4 class="fw-bold mb-4 text-white">Contact Information</h4>
+                
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="bg-dark rounded-circle p-3 shadow-sm text-primary"><i class="bi bi-geo-alt fs-4"></i></div>
+                    <div>
+                        <div class="small text-muted">Address</div>
+                        <div class="fw-bold text-white">Nagpur, Maharashtra, India</div>
+                    </div>
+                </div>
+                
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="bg-dark rounded-circle p-3 shadow-sm text-primary"><i class="bi bi-envelope fs-4"></i></div>
+                    <div>
+                        <div class="small text-muted">Email</div>
+                        <div class="fw-bold"><a href="mailto:support@bookbazar.com" class="text-decoration-none text-white">support@bookbazar.com</a></div>
+                    </div>
+                </div>
+                
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="bg-dark rounded-circle p-3 shadow-sm text-primary"><i class="bi bi-telephone fs-4"></i></div>
+                    <div>
+                        <div class="small text-muted">Phone</div>
+                        <div class="fw-bold"><a href="tel:+919876543210" class="text-decoration-none text-white">+91 9876543210</a></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

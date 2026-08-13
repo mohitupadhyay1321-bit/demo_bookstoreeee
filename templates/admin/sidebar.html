@@ -1,0 +1,61 @@
+<div class="sidebar">
+    <div class="logo">
+        <h3>📚 Book<span>Bazar</span></h3>
+    </div>
+    <ul>
+        <li>
+            <a href="{{ url_for('admin_dashboard') }}" class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+                <i class="bi bi-speedometer2"></i>
+                Dashboard
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('admin_books') }}" class="{% if request.endpoint in ['admin_books', 'admin_add_book', 'admin_edit_book'] %}active{% endif %}">
+                <i class="bi bi-book"></i>
+                Books
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('admin_categories') }}" class="{% if request.endpoint == 'admin_categories' %}active{% endif %}">
+                <i class="bi bi-grid"></i>
+                Categories
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('admin_orders') }}" class="{% if request.endpoint == 'admin_orders' %}active{% endif %}">
+                <i class="bi bi-cart"></i>
+                Orders
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('admin_users') }}" class="{% if request.endpoint == 'admin_users' %}active{% endif %}">
+                <i class="bi bi-people"></i>
+                Users
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('admin_sellers') }}" class="{% if request.endpoint == 'admin_sellers' %}active{% endif %}">
+                <i class="bi bi-shop"></i>
+                Sellers
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('admin_reports') }}" class="{% if request.endpoint == 'admin_reports' %}active{% endif %}">
+                <i class="bi bi-bar-chart"></i>
+                Reports
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('admin_settings') }}" class="{% if request.endpoint == 'admin_settings' %}active{% endif %}">
+                <i class="bi bi-gear"></i>
+                Settings
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('logout') }}">
+                <i class="bi bi-box-arrow-right"></i>
+                Logout
+            </a>
+        </li>
+    </ul>
+</div>

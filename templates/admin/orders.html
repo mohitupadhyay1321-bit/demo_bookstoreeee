@@ -1,0 +1,54 @@
+{% extends 'layouts/admin_base.html' %}
+
+{% block title %}
+Manage Orders | Admin
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>📦 Manage Orders</h2>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 p-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer Name</th>
+                    <th>Book Title</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in orders %}
+                <tr>
+                    <td>{{ o.order_number }}</td>
+                    <td>{{ o.customer_name or 'Guest' }}</td>
+                    <td>{{ o.book_titles or 'Multiple Books' }}</td>
+                    <td>₹{{ o.total_amount }}</td>
+                    <td>
+                        {% if o.status == 'Delivered' or o.status == 'Completed' %}
+                            <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Completed</span>
+                        {% elif o.status == 'Processing' %}
+                            <span class="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill">Processing</span>
+                        {% elif o.status == 'Shipped' %}
+                            <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">Shipped</span>
+                        {% else %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill">{{ o.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ o.created_at.strftime('%B %d, %Y') if o.created_at else '' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No orders placed yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

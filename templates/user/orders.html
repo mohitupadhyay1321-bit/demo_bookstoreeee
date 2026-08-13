@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Order Confirmed | BookBazar{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center" style="margin-top: 150px; margin-bottom: 100px;">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card border-0 shadow rounded-4 p-5" style="background: #111114;">
+                <div class="mb-4">
+                    <i class="bi bi-patch-check-fill text-success" style="font-size: 5rem;"></i>
+                </div>
+                <h1 class="fw-bold mb-3 text-white">Order Confirmed!</h1>
+                <p class="text-muted fs-5 mb-4">
+                    Thank you for shopping with BookBazar. Your order has been placed successfully and is currently being processed.
+                </p>
+                
+                <div class="p-4 rounded-4 mb-4 text-start" style="background: #1e1e24;">
+                    <h6 class="fw-bold text-white mb-3">Order Details</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Order ID:</span>
+                        <strong class="text-white" id="confirmed-order-id">#ORD-9082</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Payment Method:</span>
+                        <strong class="text-white" id="confirmed-payment-method">Cash on Delivery</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Total Amount:</span>
+                        <strong class="text-white" id="confirmed-total-amount">₹898</strong>
+                    </div>
+                </div>
+                
+                <div class="d-flex gap-3 justify-content-center">
+                    <a href="{{ url_for('books') }}" class="btn btn-primary rounded-pill px-4 py-2">Continue Shopping</a>
+                    <a href="{{ url_for('profile') }}" class="btn btn-outline-light rounded-pill px-4 py-2">Go to Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

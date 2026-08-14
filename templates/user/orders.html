@@ -16,18 +16,22 @@
                 </p>
                 
                 <div class="p-4 rounded-4 mb-4 text-start" style="background: #1e1e24;">
-                    <h6 class="fw-bold text-white mb-3">Order Details</h6>
+                    <h6 class="fw-bold text-white mb-3"><i class="bi bi-receipt me-2 text-primary"></i>Order Summary</h6>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Order ID:</span>
-                        <strong class="text-white" id="confirmed-order-id">#ORD-9082</strong>
+                        <strong class="text-white" id="confirmed-order-id">{{ session.get('last_order_number') or '#ORD-SUCCESS' }}</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Payment Method:</span>
-                        <strong class="text-white" id="confirmed-payment-method">Cash on Delivery</strong>
+                        <strong class="text-white" id="confirmed-payment-method">{{ session.get('last_order_payment') or 'Cash on Delivery' }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Delivery Address:</span>
+                        <strong class="text-white text-end" style="max-width: 300px;" id="confirmed-address">{{ session.get('last_order_address') or 'Saved Profile Address' }}</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Total Amount:</span>
-                        <strong class="text-white" id="confirmed-total-amount">₹898</strong>
+                        <strong class="text-white" id="confirmed-total-amount">₹{{ session.get('last_order_total') or '0.00' }}</strong>
                     </div>
                 </div>
                 

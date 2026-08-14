@@ -496,3 +496,48 @@ strong, .fw-bold {
 .topbar h4 {
     color: var(--text-main) !important;
 }
+
+/*==========================
+ ORDER DETAILS MODAL
+==========================*/
+.modal-content.dark-glass-modal {
+    background: #0f1424 !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-main) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), 0 0 30px rgba(99, 102, 241, 0.1) !important;
+}
+
+.modal-content.dark-glass-modal .modal-header {
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 20px 24px;
+}
+
+.modal-content.dark-glass-modal .modal-footer {
+    border-top: 1px solid var(--border-color) !important;
+    padding: 16px 24px;
+}
+
+.order-detail-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 16px;
+}
+
+.order-detail-card h6 {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.order-item-img {
+    width: 48px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}

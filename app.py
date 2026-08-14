@@ -92,11 +92,16 @@ def initialize_database():
                     user_id INT DEFAULT NULL,
                     total_amount DECIMAL(10, 2) NOT NULL,
                     payment_method VARCHAR(100) NOT NULL,
+                    shipping_address TEXT DEFAULT NULL,
                     status VARCHAR(50) DEFAULT 'Processing',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """)
+            try:
+                cursor.execute("ALTER TABLE orders ADD COLUMN shipping_address TEXT DEFAULT NULL;")
+            except Exception:
+                pass
 
             # Create Order Items Table
             cursor.execute("""
@@ -276,7 +281,9 @@ def check_user_access():
             "admin_edit_category",
             "admin_delete_category",
             "admin_orders",
+            "admin_order_details",
             "admin_users",
+            "admin_user_details",
             "admin_sellers",
             "admin_reports",
             "admin_settings",
@@ -640,7 +647,7 @@ def admin_dashboard():
 
             # 5. Recent Orders (limit 5)
             cursor.execute("""
-                SELECT o.order_number, u.name as customer_name,
+                SELECT o.id, o.order_number, u.name as customer_name,
                        (SELECT b.title FROM order_items oi 
                         JOIN books b ON oi.book_id = b.id 
                         WHERE oi.order_id = o.id LIMIT 1) as book_title,
@@ -663,6 +670,100 @@ def admin_dashboard():
         )
     except Exception as e:
         return f"Database error: {e}"
+
+
+@app.route("/admin/orders")
+def admin_orders():
+    if "user" not in session or session.get("user") != "Admin":
+        return redirect(url_for("admin_login"))
+
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT o.*, u.name as customer_name,
+                       (SELECT GROUP_CONCAT(b.title SEPARATOR ', ') 
+                        FROM order_items oi 
+                        JOIN books b ON oi.book_id = b.id 
+                        WHERE oi.order_id = o.id) as book_titles
+                FROM orders o
+                LEFT JOIN users u ON o.user_id = u.id
+                ORDER BY o.created_at DESC
+            """)
+            orders_list = cursor.fetchall()
+        conn.close()
+        return render_template("admin/orders.html", orders=orders_list)
+    except Exception as e:
+        return f"Database error: {e}"
+
+
+@app.route("/admin/order/<int:order_id>/details")
+def admin_order_details(order_id):
+    if "user" not in session or session.get("user") != "Admin":
+        return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT o.id, o.order_number, o.total_amount, o.payment_method, o.status, o.created_at,
+                       COALESCE(NULLIF(TRIM(o.shipping_address), ''), u.shipping_address) as shipping_address,
+                       u.name as customer_name, u.email as customer_email
+                FROM orders o
+                LEFT JOIN users u ON o.user_id = u.id
+                WHERE o.id = %s
+            """, (order_id,))
+            order = cursor.fetchone()
+
+            if not order:
+                conn.close()
+                return jsonify({"success": False, "error": "Order not found"}), 404
+
+            date_str = order["created_at"].strftime("%B %d, %Y %I:%M %p") if order.get("created_at") else "N/A"
+
+            cursor.execute("""
+                SELECT oi.id, oi.quantity, oi.price, 
+                       b.title, b.author, b.img, b.category_name
+                FROM order_items oi
+                LEFT JOIN books b ON oi.book_id = b.id
+                WHERE oi.order_id = %s
+            """, (order_id,))
+            raw_items = cursor.fetchall()
+
+            items = []
+            total_items_count = 0
+            for item in raw_items:
+                qty = int(item["quantity"])
+                unit_price = float(item["price"])
+                total_items_count += qty
+                items.append({
+                    "title": item["title"] or "Book Title Unavailable",
+                    "author": item["author"] or "Unknown Author",
+                    "img": item["img"] or "",
+                    "category": item["category_name"] or "General",
+                    "quantity": qty,
+                    "price": f"{unit_price:.2f}",
+                    "subtotal": f"{(qty * unit_price):.2f}"
+                })
+
+            order_details = {
+                "id": order["id"],
+                "order_number": order["order_number"],
+                "customer_name": order["customer_name"] or "Guest Customer",
+                "customer_email": order["customer_email"] or "Not Provided",
+                "shipping_address": order["shipping_address"] or "No address on file",
+                "payment_method": order["payment_method"] or "Standard",
+                "status": order["status"] or "Processing",
+                "created_at": date_str,
+                "total_amount": f"{float(order['total_amount']):.2f}",
+                "total_items_count": total_items_count,
+                "items": items
+            }
+
+        conn.close()
+        return jsonify({"success": True, "order": order_details})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route("/admin/books")
@@ -889,32 +990,6 @@ def admin_delete_category(id):
         return redirect(url_for("admin_categories", error=f"Database error: {e}"))
 
 
-
-@app.route("/admin/orders")
-def admin_orders():
-    if "user" not in session or session.get("user") != "Admin":
-        return redirect(url_for("admin_login"))
-
-    try:
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT o.*, u.name as customer_name,
-                       (SELECT GROUP_CONCAT(b.title SEPARATOR ', ') 
-                        FROM order_items oi 
-                        JOIN books b ON oi.book_id = b.id 
-                        WHERE oi.order_id = o.id) as book_titles
-                FROM orders o
-                LEFT JOIN users u ON o.user_id = u.id
-                ORDER BY o.created_at DESC
-            """)
-            orders_list = cursor.fetchall()
-        conn.close()
-        return render_template("admin/orders.html", orders=orders_list)
-    except Exception as e:
-        return f"Database error: {e}"
-
-
 @app.route("/admin/users")
 def admin_users():
     if "user" not in session or session.get("user") != "Admin":
@@ -929,6 +1004,81 @@ def admin_users():
         return render_template("admin/users.html", users=users_list)
     except Exception as e:
         return f"Database error: {e}"
+
+
+@app.route("/admin/user/<int:user_id>/details")
+def admin_user_details(user_id):
+    if "user" not in session or session.get("user") != "Admin":
+        return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, name, email, role, shipping_address, avatar, created_at
+                FROM users
+                WHERE id = %s
+            """, (user_id,))
+            user = cursor.fetchone()
+
+            if not user:
+                conn.close()
+                return jsonify({"success": False, "error": "User not found"}), 404
+
+            formatted_date = user["created_at"].strftime("%B %d, %Y") if user.get("created_at") else "N/A"
+
+            cursor.execute("""
+                SELECT COUNT(*) as total_orders, SUM(total_amount) as total_spent
+                FROM orders
+                WHERE user_id = %s
+            """, (user_id,))
+            order_stats = cursor.fetchone()
+            total_orders = order_stats["total_orders"] if order_stats else 0
+            total_spent_val = float(order_stats["total_spent"]) if order_stats and order_stats.get("total_spent") else 0.0
+
+            cursor.execute("SELECT COUNT(*) as books_count FROM books WHERE seller_id = %s", (user_id,))
+            book_stats = cursor.fetchone()
+            books_count = book_stats["books_count"] if book_stats else 0
+
+            cursor.execute("""
+                SELECT id, order_number, total_amount, payment_method, status, created_at
+                FROM orders
+                WHERE user_id = %s
+                ORDER BY created_at DESC
+                LIMIT 5
+            """, (user_id,))
+            raw_orders = cursor.fetchall()
+            recent_orders = []
+            for o in raw_orders:
+                o_date = o["created_at"].strftime("%b %d, %Y") if o.get("created_at") else ""
+                recent_orders.append({
+                    "id": o["id"],
+                    "order_number": o["order_number"],
+                    "total_amount": f"{float(o['total_amount']):.2f}",
+                    "payment_method": o["payment_method"] or "N/A",
+                    "status": o["status"] or "Processing",
+                    "date": o_date
+                })
+
+            user_details = {
+                "id": user["id"],
+                "formatted_id": f"#USR-{user['id']:03d}",
+                "name": user["name"],
+                "email": user["email"],
+                "role": user["role"] or "User",
+                "shipping_address": user["shipping_address"] or "No address saved",
+                "avatar": user["avatar"] or f"https://i.pravatar.cc/120?u={user['email']}",
+                "created_at": formatted_date,
+                "total_orders": total_orders,
+                "total_spent": f"{total_spent_val:.2f}",
+                "books_count": books_count,
+                "recent_orders": recent_orders
+            }
+
+        conn.close()
+        return jsonify({"success": True, "user": user_details})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route("/admin/sellers")
@@ -1459,9 +1609,24 @@ def api_admin_book_delete():
 
 @app.route("/checkout")
 def checkout():
-    if "user" not in session:
+    if "user" not in session or "user_id" not in session:
         return redirect(url_for("login"))
-    return render_template("user/checkout.html")
+
+    user_name = ""
+    user_address = ""
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT name, shipping_address FROM users WHERE id = %s", (session["user_id"],))
+            u = cursor.fetchone()
+            if u:
+                user_name = u.get("name", "")
+                user_address = u.get("shipping_address", "")
+        conn.close()
+    except Exception as e:
+        print(f"Error fetching checkout profile: {e}")
+
+    return render_template("user/checkout.html", user_name=user_name, user_address=user_address)
 
 
 @app.route("/orders")
@@ -1482,6 +1647,31 @@ def place_order():
         payment_text = "UPI"
     elif payment == "CARD":
         payment_text = "Credit / Debit Card"
+
+    # Extract address fields from form
+    fullname = request.form.get("fullname", "").strip()
+    phone = request.form.get("phone", "").strip()
+    house = request.form.get("house", "").strip()
+    street = request.form.get("street", "").strip()
+    city = request.form.get("city", "").strip()
+    state = request.form.get("state", "").strip()
+    pincode = request.form.get("pincode", "").strip()
+
+    address_components = []
+    if house:
+        address_components.append(house)
+    if street:
+        address_components.append(street)
+    if city or state:
+        address_components.append(f"{city}, {state}".strip(", "))
+    if pincode:
+        address_components.append(f"Pincode: {pincode}")
+    if phone:
+        address_components.append(f"Phone: {phone}")
+
+    full_shipping_address = ", ".join(address_components)
+    if not full_shipping_address and request.form.get("shipping_address"):
+        full_shipping_address = request.form.get("shipping_address").strip()
         
     import random
     order_number = f"#ORD-{random.randint(1000, 9999)}"
@@ -1505,13 +1695,20 @@ def place_order():
             # Calculate total
             total_amount = sum(float(item["price"]) * item["quantity"] for item in cart_items)
             
-            # Insert Order
+            # Insert Order with shipping_address
             cursor.execute(
-                """INSERT INTO orders (order_number, user_id, total_amount, payment_method, status) 
-                VALUES (%s, %s, %s, %s, 'Processing')""",
-                (order_number, session["user_id"], total_amount, payment_text)
+                """INSERT INTO orders (order_number, user_id, total_amount, payment_method, shipping_address, status) 
+                VALUES (%s, %s, %s, %s, %s, 'Processing')""",
+                (order_number, session["user_id"], total_amount, payment_text, full_shipping_address)
             )
             order_id = cursor.lastrowid
+            
+            # Update user's profile address
+            if full_shipping_address:
+                cursor.execute(
+                    "UPDATE users SET shipping_address = %s WHERE id = %s",
+                    (full_shipping_address, session["user_id"])
+                )
             
             # Insert Order Items
             for item in cart_items:
@@ -1530,6 +1727,7 @@ def place_order():
         session["last_order_number"] = order_number
         session["last_order_payment"] = payment_text
         session["last_order_total"] = total_amount
+        session["last_order_address"] = full_shipping_address or "No address provided"
         
         return redirect(url_for("orders"))
     except Exception as e:

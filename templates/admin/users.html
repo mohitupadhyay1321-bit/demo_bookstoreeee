@@ -28,11 +28,16 @@ Manage Users | Admin
                     <td>#USR-{{ "%03d" | format(u.id) }}</td>
                     <td><strong>{{ u.name }}</strong></td>
                     <td>{{ u.email }}</td>
-                    <td>{{ u.role }}</td>
+                    <td>
+                        <span class="badge {% if u.role == 'Admin' %}bg-purple bg-opacity-25 text-purple{% else %}bg-primary bg-opacity-10 text-primary{% endif %} px-3 py-2 rounded-pill">
+                            {{ u.role or 'User' }}
+                        </span>
+                    </td>
                     <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Active</span></td>
                     <td>
-                        <button class="btn btn-sm btn-outline-secondary" {% if u.role == 'Admin' %}disabled{% endif %}><i class="bi bi-shield"></i></button>
-                        <button class="btn btn-sm btn-outline-danger" {% if u.role == 'Admin' %}disabled{% endif %}><i class="bi bi-trash"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 me-1 btn-view-user" data-user-id="{{ u.id }}">
+                            <i class="bi bi-eye me-1"></i> View Details
+                        </button>
                     </td>
                 </tr>
                 {% else %}
@@ -44,4 +49,176 @@ Manage Users | Admin
         </table>
     </div>
 </div>
+
+<!-- User Detail Modal -->
+<div class="modal fade" id="adminUserDetailModal" tabindex="-1" aria-labelledby="adminUserDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content dark-glass-modal">
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <img id="userModalAvatar" src="" class="rounded-circle border border-2 border-primary" style="width: 50px; height: 50px; object-fit: cover;" alt="User Avatar">
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="modal-title fw-bold m-0 text-white" id="userModalName"></h5>
+                            <span id="userModalRoleBadge" class="badge bg-primary bg-opacity-20 text-primary rounded-pill"></span>
+                        </div>
+                        <div class="text-muted small" id="userModalFormattedId"></div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Loading Spinner -->
+                <div id="userModalLoadingSpinner" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="text-muted mt-2">Fetching user profile...</p>
+                </div>
+
+                <!-- Main User Content -->
+                <div id="userModalMainContent" class="d-none">
+                    <!-- Quick Stats Row -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="order-detail-card text-center p-3">
+                                <h6 class="mb-1"><i class="bi bi-bag-check me-1 text-primary"></i> Total Orders</h6>
+                                <h4 class="fw-bold text-white m-0" id="userModalTotalOrders">0</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="order-detail-card text-center p-3">
+                                <h6 class="mb-1"><i class="bi bi-currency-rupee me-1 text-success"></i> Total Spent</h6>
+                                <h4 class="fw-bold text-white m-0" id="userModalTotalSpent">₹0.00</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="order-detail-card text-center p-3">
+                                <h6 class="mb-1"><i class="bi bi-book me-1 text-warning"></i> Books Listed</h6>
+                                <h4 class="fw-bold text-white m-0" id="userModalBooksCount">0</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Personal Information & Shipping Address -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="order-detail-card h-100">
+                                <h6><i class="bi bi-envelope-fill me-1 text-primary"></i> Account Details</h6>
+                                <div class="mb-2">
+                                    <span class="text-muted small d-block">Email Address:</span>
+                                    <strong class="text-white" id="userModalEmail"></strong>
+                                </div>
+                                <div>
+                                    <span class="text-muted small d-block">Registration Date:</span>
+                                    <strong class="text-white" id="userModalCreatedAt"></strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="order-detail-card h-100">
+                                <h6><i class="bi bi-geo-alt-fill me-1 text-danger"></i> Saved Shipping Address</h6>
+                                <div class="text-white small" id="userModalShippingAddress"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Orders History -->
+                    <h6 class="fw-bold text-uppercase text-muted mb-3" style="font-size: 0.8rem; letter-spacing: 0.5px;">
+                        <i class="bi bi-clock-history me-1 text-primary"></i> Recent Order Activity
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table premium-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Date</th>
+                                    <th>Payment</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userModalOrdersTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const viewButtons = document.querySelectorAll(".btn-view-user");
+    const modalElement = document.getElementById("adminUserDetailModal");
+    let bsModal = null;
+
+    if (modalElement) {
+        bsModal = new bootstrap.Modal(modalElement);
+    }
+
+    viewButtons.forEach(btn => {
+        btn.addEventListener("click", function () {
+            const userId = this.getAttribute("data-user-id");
+            if (!userId || !bsModal) return;
+
+            document.getElementById("userModalLoadingSpinner").classList.remove("d-none");
+            document.getElementById("userModalMainContent").classList.add("d-none");
+            bsModal.show();
+
+            fetch(`/admin/user/${userId}/details`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.user) {
+                        const u = data.user;
+                        document.getElementById("userModalName").textContent = u.name;
+                        document.getElementById("userModalFormattedId").textContent = u.formatted_id;
+                        document.getElementById("userModalRoleBadge").textContent = u.role;
+                        document.getElementById("userModalEmail").textContent = u.email;
+                        document.getElementById("userModalCreatedAt").textContent = u.created_at;
+                        document.getElementById("userModalShippingAddress").textContent = u.shipping_address;
+                        document.getElementById("userModalAvatar").src = u.avatar;
+
+                        document.getElementById("userModalTotalOrders").textContent = u.total_orders;
+                        document.getElementById("userModalTotalSpent").textContent = "₹" + u.total_spent;
+                        document.getElementById("userModalBooksCount").textContent = u.books_count;
+
+                        // Recent Orders table
+                        const tbody = document.getElementById("userModalOrdersTableBody");
+                        tbody.innerHTML = "";
+                        if (u.recent_orders && u.recent_orders.length > 0) {
+                            u.recent_orders.forEach(o => {
+                                const tr = document.createElement("tr");
+                                tr.innerHTML = `
+                                    <td class="fw-bold text-white">${o.order_number}</td>
+                                    <td>${o.date}</td>
+                                    <td><span class="badge bg-secondary bg-opacity-25 text-white-50">${o.payment_method}</span></td>
+                                    <td class="fw-bold text-white">₹${o.total_amount}</td>
+                                    <td><span class="status-badge ${o.status === 'Completed' || o.status === 'Delivered' ? 'completed' : 'processing'}">${o.status}</span></td>
+                                `;
+                                tbody.appendChild(tr);
+                            });
+                        } else {
+                            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">No orders placed yet.</td></tr>`;
+                        }
+
+                        document.getElementById("userModalLoadingSpinner").classList.add("d-none");
+                        document.getElementById("userModalMainContent").classList.remove("d-none");
+                    } else {
+                        alert(data.error || "Failed to load user details");
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("An error occurred while fetching user details.");
+                });
+        });
+    });
+});
+</script>
 {% endblock %}

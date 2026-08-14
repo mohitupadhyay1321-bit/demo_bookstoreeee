@@ -20,12 +20,13 @@ Manage Orders | Admin
                     <th>Price</th>
                     <th>Status</th>
                     <th>Date</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
                 {% for o in orders %}
                 <tr>
-                    <td>{{ o.order_number }}</td>
+                    <td class="fw-bold">{{ o.order_number }}</td>
                     <td>{{ o.customer_name or 'Guest' }}</td>
                     <td>{{ o.book_titles or 'Multiple Books' }}</td>
                     <td>₹{{ o.total_amount }}</td>
@@ -41,14 +42,181 @@ Manage Orders | Admin
                         {% endif %}
                     </td>
                     <td>{{ o.created_at.strftime('%B %d, %Y') if o.created_at else '' }}</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 btn-view-order" data-order-id="{{ o.id }}">
+                            <i class="bi bi-eye me-1"></i> View Details
+                        </button>
+                    </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">No orders placed yet.</td>
+                    <td colspan="7" class="text-center text-muted py-4">No orders placed yet.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<!-- Order Detail Modal -->
+<div class="modal fade" id="adminOrderDetailModal" tabindex="-1" aria-labelledby="adminOrderDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content dark-glass-modal">
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <h5 class="modal-title fw-bold m-0" id="adminOrderDetailModalLabel">
+                        <i class="bi bi-receipt me-2 text-primary"></i>
+                        Order <span id="modalOrderNumber" class="text-white"></span>
+                    </h5>
+                    <span id="modalOrderStatusBadge" class="status-badge processing"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Loading Spinner -->
+                <div id="modalLoadingSpinner" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="text-muted mt-2">Fetching order details...</p>
+                </div>
+
+                <!-- Main Details Content -->
+                <div id="modalMainContent" class="d-none">
+                    <!-- Customer & Shipping Summary Grid -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="order-detail-card h-100">
+                                <h6><i class="bi bi-person-fill me-1 text-primary"></i> Customer Details</h6>
+                                <div class="fw-bold text-white fs-6 mb-1" id="modalCustomerName"></div>
+                                <div class="text-muted small mb-2" id="modalCustomerEmail"></div>
+                                <div class="small text-white-50"><i class="bi bi-clock me-1"></i> Placed: <span id="modalOrderDate" class="text-white"></span></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="order-detail-card h-100">
+                                <h6><i class="bi bi-geo-alt-fill me-1 text-primary"></i> Shipping & Payment</h6>
+                                <div class="small text-white mb-2" id="modalShippingAddress"></div>
+                                <div class="small text-white-50"><i class="bi bi-credit-card me-1"></i> Payment: <span id="modalPaymentMethod" class="badge bg-secondary bg-opacity-25 text-white"></span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Items Table -->
+                    <h6 class="fw-bold text-uppercase text-muted mb-3" style="font-size: 0.8rem; letter-spacing: 0.5px;">
+                        <i class="bi bi-box-seam me-1 text-primary"></i> Ordered Items (<span id="modalTotalItemsCount">0</span>)
+                    </h6>
+                    <div class="table-responsive mb-4">
+                        <table class="table premium-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Unit Price</th>
+                                    <th class="text-center">Qty</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modalItemsTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Order Total Summary -->
+                    <div class="d-flex justify-content-end align-items-center p-3 rounded-3" style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2);">
+                        <span class="fs-6 me-3 text-muted">Total Amount:</span>
+                        <span class="fs-4 fw-bold text-white" id="modalTotalAmount">₹0.00</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const detailButtons = document.querySelectorAll(".btn-view-order");
+    const modalElement = document.getElementById("adminOrderDetailModal");
+    let bsModal = null;
+
+    if (modalElement) {
+        bsModal = new bootstrap.Modal(modalElement);
+    }
+
+    detailButtons.forEach(btn => {
+        btn.addEventListener("click", function () {
+            const orderId = this.getAttribute("data-order-id");
+            if (!orderId || !bsModal) return;
+
+            document.getElementById("modalLoadingSpinner").classList.remove("d-none");
+            document.getElementById("modalMainContent").classList.add("d-none");
+            bsModal.show();
+
+            fetch(`/admin/order/${orderId}/details`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.order) {
+                        const o = data.order;
+                        document.getElementById("modalOrderNumber").textContent = o.order_number;
+                        
+                        // Status badge
+                        const badge = document.getElementById("modalOrderStatusBadge");
+                        badge.textContent = o.status;
+                        badge.className = "status-badge ";
+                        if (o.status === "Delivered" || o.status === "Completed") {
+                            badge.classList.add("completed");
+                        } else if (o.status === "Processing" || o.status === "Shipped") {
+                            badge.classList.add("processing");
+                        } else {
+                            badge.classList.add("pending");
+                        }
+
+                        document.getElementById("modalCustomerName").textContent = o.customer_name;
+                        document.getElementById("modalCustomerEmail").textContent = o.customer_email;
+                        document.getElementById("modalOrderDate").textContent = o.created_at;
+                        document.getElementById("modalShippingAddress").textContent = o.shipping_address;
+                        document.getElementById("modalPaymentMethod").textContent = o.payment_method;
+                        document.getElementById("modalTotalItemsCount").textContent = o.total_items_count;
+                        document.getElementById("modalTotalAmount").textContent = "₹" + o.total_amount;
+
+                        // Items table
+                        const tbody = document.getElementById("modalItemsTableBody");
+                        tbody.innerHTML = "";
+                        o.items.forEach(item => {
+                            const tr = document.createElement("tr");
+                            const imgHtml = item.img ? `<img src="${item.img}" class="order-item-img me-3" alt="${item.title}">` : '';
+                            tr.innerHTML = `
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        ${imgHtml}
+                                        <div>
+                                            <div class="fw-bold text-white mb-0">${item.title}</div>
+                                            <div class="text-muted small">${item.author} • <span class="badge bg-secondary bg-opacity-25 text-white-50">${item.category}</span></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>₹${item.price}</td>
+                                <td class="text-center fw-bold">${item.quantity}</td>
+                                <td class="text-end fw-bold text-white">₹${item.subtotal}</td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+
+                        document.getElementById("modalLoadingSpinner").classList.add("d-none");
+                        document.getElementById("modalMainContent").classList.remove("d-none");
+                    } else {
+                        alert(data.error || "Failed to load order details");
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("An error occurred while fetching order details.");
+                });
+        });
+    });
+});
+</script>
 {% endblock %}

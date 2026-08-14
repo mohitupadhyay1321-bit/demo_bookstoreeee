@@ -67,19 +67,62 @@ background: linear-gradient(270deg, #574fd1, #56acbd, #41937f);
 padding:40px;
 border-radius:20px;
 box-shadow:0 20px 60px rgba(0,0,0,.15);
+color: #ffffff;
 
 }
 
 .login-card h2{
 
 font-weight:700;
+color: #ffffff;
 
 }
 
 .login-card p{
 
-color:gray;
+color: rgba(255, 255, 255, 0.95);
+margin-bottom:20px;
+
+}
+
+.login-card p.subtitle{
+
+color: rgba(255, 255, 255, 0.9);
 margin-bottom:30px;
+
+}
+
+.login-card label{
+
+color: #ffffff;
+font-weight: 600;
+font-size: 0.9rem;
+margin-bottom: 6px;
+display: inline-block;
+
+}
+
+.login-card .remember-text{
+
+color: #ffffff;
+font-weight: 500;
+
+}
+
+.login-card a{
+
+color: #ffffff;
+font-weight: 700;
+text-decoration: underline;
+text-underline-offset: 3px;
+transition: opacity 0.2s ease, color 0.2s ease;
+
+}
+
+.login-card a:hover{
+
+color: #ffffff;
+opacity: 0.85;
 
 }
 
@@ -129,6 +172,8 @@ text-decoration:none;
 hr{
 
 margin:25px 0;
+border-color: rgba(255, 255, 255, 0.3);
+opacity: 0.3;
 
 }
 

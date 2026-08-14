@@ -59,7 +59,7 @@ Buy New Books • Sell Pre-Loved Books • Join India's Reading Community
 
 <h2>Welcome Back 👋</h2>
 
-<p>Login to continue</p>
+<p class="subtitle">Login to continue</p>
 
 {% if error %}
 <div class="alert alert-danger border-0 shadow-sm rounded-4 p-3 mb-4 text-center" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
@@ -139,13 +139,13 @@ onclick="togglePassword()">
 
 </div>
 
-<div class="d-flex justify-content-between mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4">
 
-<div>
+<div class="d-flex align-items-center remember-text">
 
-<input type="checkbox">
+<input type="checkbox" id="rememberMe">
 
-Remember Me
+<label for="rememberMe" class="remember-text mb-0 ms-2" style="cursor: pointer;">Remember Me</label>
 
 </div>
 
@@ -163,7 +163,7 @@ Login
 
 <hr>
 
-<p class="text-center">
+<p class="text-center mb-0">
 
 Don't have an account?
 

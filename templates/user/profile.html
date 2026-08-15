@@ -19,7 +19,7 @@
                 </div>
                 <div>
                     <h6 class="text-muted small mb-1">Total Orders</h6>
-                    <h3 class="fw-bold text-white mb-0">3</h3>
+                    <h3 class="fw-bold text-white mb-0">{{ total_orders }}</h3>
                 </div>
             </div>
         </div>
@@ -32,7 +32,7 @@
                 </div>
                 <div>
                     <h6 class="text-muted small mb-1">My Listings</h6>
-                    <h3 class="fw-bold text-white mb-0" id="stats-my-listings-count">0</h3>
+                    <h3 class="fw-bold text-white mb-0" id="stats-my-listings-count">{{ my_listings_count }}</h3>
                 </div>
             </div>
         </div>
@@ -45,7 +45,7 @@
                 </div>
                 <div>
                     <h6 class="text-muted small mb-1">Wishlist</h6>
-                    <h3 class="fw-bold text-white mb-0">4</h3>
+                    <h3 class="fw-bold text-white mb-0">{{ wishlist_count }}</h3>
                 </div>
             </div>
         </div>
@@ -58,7 +58,7 @@
                 </div>
                 <div>
                     <h6 class="text-muted small mb-1">Wallet</h6>
-                    <h3 class="fw-bold text-white mb-0">₹450</h3>
+                    <h3 class="fw-bold text-white mb-0">₹{{ wallet_balance }}</h3>
                 </div>
             </div>
         </div>
@@ -81,19 +81,19 @@
             <div class="row text-center mt-3 g-3">
                 <div class="col-6 col-md-3 border-end border-secondary">
                     <div class="text-muted small">Total Revenue</div>
-                    <h4 class="fw-bold text-success mt-1">₹398</h4>
+                    <h4 class="fw-bold text-success mt-1">₹{{ seller_revenue }}</h4>
                 </div>
                 <div class="col-6 col-md-3 border-end border-secondary">
                     <div class="text-muted small">Books Sold</div>
-                    <h4 class="fw-bold text-white mt-1">2</h4>
+                    <h4 class="fw-bold text-white mt-1">{{ books_sold_count }}</h4>
                 </div>
                 <div class="col-6 col-md-3 border-end border-secondary">
                     <div class="text-muted small">Avg Order Value</div>
-                    <h4 class="fw-bold text-white mt-1">₹199</h4>
+                    <h4 class="fw-bold text-white mt-1">₹{{ avg_order_val }}</h4>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="text-muted small">Listing Views</div>
-                    <h4 class="fw-bold text-info mt-1">1,420</h4>
+                    <div class="text-muted small">Listings Count</div>
+                    <h4 class="fw-bold text-info mt-1">{{ my_listings_count }}</h4>
                 </div>
             </div>
         </div>
@@ -113,20 +113,21 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>#ORD-8942</td>
-                            <td>Aug 04, 2026</td>
-                            <td>Atomic Habits, Deep Work</td>
-                            <td>₹898</td>
-                            <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Delivered</span></td>
-                        </tr>
-                        <tr>
-                            <td>#ORD-7391</td>
-                            <td>Jul 28, 2026</td>
-                            <td>Rich Dad Poor Dad</td>
-                            <td>₹299</td>
-                            <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Delivered</span></td>
-                        </tr>
+                        {% if user_recent_orders %}
+                            {% for order in user_recent_orders %}
+                            <tr>
+                                <td>{{ order.order_number }}</td>
+                                <td>{{ order.date }}</td>
+                                <td>{{ order.items }}</td>
+                                <td>₹{{ order.total }}</td>
+                                <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">{{ order.status }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-3">No orders placed yet.</td>
+                            </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
@@ -162,17 +163,19 @@
                 {% if session.get('user_avatar') %}
                     <img src="{{ session.get('user_avatar') }}" alt="Avatar" class="rounded-circle shadow-sm mb-3 border border-3 border-secondary" style="width: 120px; height: 120px; object-fit: cover;">
                 {% else %}
-                    <img src="https://i.pravatar.cc/120?u={{ session.get('user_email') }}" alt="Avatar" class="rounded-circle shadow-sm mb-3 border border-3 border-secondary" style="width: 120px; height: 120px; object-fit: cover;">
+                    <div class="bg-secondary bg-opacity-25 text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 border border-3 border-secondary shadow-sm" style="width: 120px; height: 120px;">
+                        <i class="bi bi-person-fill text-secondary" style="font-size: 4rem;"></i>
+                    </div>
                 {% endif %}
                 <h5 class="fw-bold text-white mb-1">{{ session.get('user_name') or 'User' }}</h5>
-                <p class="text-muted small">Member since July 2026</p>
+                <p class="text-muted small">Registered Account</p>
             </div>
             <hr class="border-secondary">
             <div class="text-start">
                 <div class="small text-muted mb-1">Account Role</div>
                 <div class="fw-bold text-white mb-3">Verified Seller & Buyer</div>
                 <div class="small text-muted mb-1">Wallet Balance</div>
-                <div class="fw-bold text-success">₹450</div>
+                <div class="fw-bold text-success">₹{{ wallet_balance }}</div>
             </div>
         </div>
 
@@ -180,28 +183,23 @@
         <div class="card border-0 shadow-sm rounded-4 p-4">
             <h6 class="fw-bold text-white mb-4"><i class="bi bi-clock-history text-primary me-2"></i>Recent Sales Log</h6>
             <div class="d-flex flex-column gap-3">
-                <div class="p-3 rounded bg-dark bg-opacity-50">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="fw-bold text-white small">Deep Work</span>
-                        <span class="badge bg-success bg-opacity-10 text-success small" style="font-size: 0.75rem;">Completed</span>
+                {% if recent_sales_log %}
+                    {% for sale in recent_sales_log %}
+                    <div class="p-3 rounded bg-dark bg-opacity-50">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-white small">{{ sale.title }}</span>
+                            <span class="badge bg-success bg-opacity-10 text-success small" style="font-size: 0.75rem;">Completed</span>
+                        </div>
+                        <div class="text-muted small mb-2" style="font-size: 0.8rem;">Buyer: {{ sale.buyer_name }}</div>
+                        <div class="d-flex justify-content-between text-muted small" style="font-size: 0.8rem;">
+                            <span>Earnings: ₹{{ sale.earnings }}</span>
+                            <span>{{ sale.date }}</span>
+                        </div>
                     </div>
-                    <div class="text-muted small mb-2" style="font-size: 0.8rem;">Buyer: Rohan Sharma</div>
-                    <div class="d-flex justify-content-between text-muted small" style="font-size: 0.8rem;">
-                        <span>Earnings: ₹199</span>
-                        <span>Aug 01, 2026</span>
-                    </div>
-                </div>
-                <div class="p-3 rounded bg-dark bg-opacity-50">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="fw-bold text-white small">Rich Dad Poor Dad</span>
-                        <span class="badge bg-success bg-opacity-10 text-success small" style="font-size: 0.75rem;">Completed</span>
-                    </div>
-                    <div class="text-muted small mb-2" style="font-size: 0.8rem;">Buyer: Aanya Gupta</div>
-                    <div class="d-flex justify-content-between text-muted small" style="font-size: 0.8rem;">
-                        <span>Earnings: ₹199</span>
-                        <span>Jul 25, 2026</span>
-                    </div>
-                </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-muted text-center py-3 small">No sales records yet.</div>
+                {% endif %}
             </div>
         </div>
     </div>

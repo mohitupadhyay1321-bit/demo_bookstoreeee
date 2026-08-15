@@ -182,7 +182,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         document.getElementById("userModalEmail").textContent = u.email;
                         document.getElementById("userModalCreatedAt").textContent = u.created_at;
                         document.getElementById("userModalShippingAddress").textContent = u.shipping_address;
-                        document.getElementById("userModalAvatar").src = u.avatar;
+                        document.getElementById("userModalAvatar").src = u.avatar || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50' fill='%236c757d' class='bi bi-person-fill' viewBox='0 0 16 16'%3E%3Cpath d='M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6'/%3E%3C/svg%3E";
 
                         document.getElementById("userModalTotalOrders").textContent = u.total_orders;
                         document.getElementById("userModalTotalSpent").textContent = "₹" + u.total_spent;

@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
 
-{% block title %}Order Confirmed | BookBazar{% endblock %}
+{% block title %}{% if has_recent_order %}Order Confirmed{% else %}My Orders{% endif %} | BookBazar{% endblock %}
 
 {% block content %}
 <div class="container py-5 text-center" style="margin-top: 150px; margin-bottom: 100px;">
     <div class="row justify-content-center">
         <div class="col-md-7">
             <div class="card border-0 shadow rounded-4 p-5" style="background: #111114;">
+                {% if has_recent_order %}
                 <div class="mb-4">
                     <i class="bi bi-patch-check-fill text-success" style="font-size: 5rem;"></i>
                 </div>
@@ -19,19 +20,19 @@
                     <h6 class="fw-bold text-white mb-3"><i class="bi bi-receipt me-2 text-primary"></i>Order Summary</h6>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Order ID:</span>
-                        <strong class="text-white" id="confirmed-order-id">{{ session.get('last_order_number') or '#ORD-SUCCESS' }}</strong>
+                        <strong class="text-white" id="confirmed-order-id">{{ order_number }}</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Payment Method:</span>
-                        <strong class="text-white" id="confirmed-payment-method">{{ session.get('last_order_payment') or 'Cash on Delivery' }}</strong>
+                        <strong class="text-white" id="confirmed-payment-method">{{ order_payment }}</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Delivery Address:</span>
-                        <strong class="text-white text-end" style="max-width: 300px;" id="confirmed-address">{{ session.get('last_order_address') or 'Saved Profile Address' }}</strong>
+                        <strong class="text-white text-end" style="max-width: 300px;" id="confirmed-address">{{ order_address }}</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Total Amount:</span>
-                        <strong class="text-white" id="confirmed-total-amount">₹{{ session.get('last_order_total') or '0.00' }}</strong>
+                        <strong class="text-white" id="confirmed-total-amount">₹{{ order_total }}</strong>
                     </div>
                 </div>
                 
@@ -39,6 +40,20 @@
                     <a href="{{ url_for('books') }}" class="btn btn-primary rounded-pill px-4 py-2">Continue Shopping</a>
                     <a href="{{ url_for('profile') }}" class="btn btn-outline-light rounded-pill px-4 py-2">Go to Dashboard</a>
                 </div>
+                {% else %}
+                <div class="mb-4">
+                    <i class="bi bi-bag-check text-muted" style="font-size: 5rem;"></i>
+                </div>
+                <h1 class="fw-bold mb-3 text-white">No Recent Orders</h1>
+                <p class="text-muted fs-5 mb-4">
+                    You haven't placed any recent orders in this session. Explore our catalog to find your next favorite book!
+                </p>
+                
+                <div class="d-flex gap-3 justify-content-center">
+                    <a href="{{ url_for('books') }}" class="btn btn-primary rounded-pill px-4 py-2">Explore Books</a>
+                    <a href="{{ url_for('profile') }}" class="btn btn-outline-light rounded-pill px-4 py-2">Go to Dashboard</a>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

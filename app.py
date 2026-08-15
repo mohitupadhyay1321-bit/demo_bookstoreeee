@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-import pymysql
+from flask_mysqldb import MySQL
+import MySQLdb
+import MySQLdb.cursors
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
@@ -9,26 +11,19 @@ app.config["MYSQL_HOST"] = "localhost"
 app.config["MYSQL_USER"] = "root"
 app.config["MYSQL_PASSWORD"] = "root"
 app.config["MYSQL_DB"] = "book_store"
+app.config["MYSQL_CURSORCLASS"] = "DictCursor"
 
-def get_db_connection():
-    return pymysql.connect(
-        host=app.config["MYSQL_HOST"],
-        user=app.config["MYSQL_USER"],
-        password=app.config["MYSQL_PASSWORD"],
-        database=app.config["MYSQL_DB"],
-        charset='utf8mb4',
-        cursorclass=pymysql.cursors.DictCursor
-    )
+mysql = MySQL(app)
 
 def initialize_database():
     print("Initializing database...")
     # 1. Connect to MySQL server to create DB if not exists
-    connection = pymysql.connect(
+    connection = MySQLdb.connect(
         host=app.config["MYSQL_HOST"],
         user=app.config["MYSQL_USER"],
         password=app.config["MYSQL_PASSWORD"],
         charset='utf8mb4',
-        cursorclass=pymysql.cursors.DictCursor
+        cursorclass=MySQLdb.cursors.DictCursor
     )
     try:
         with connection.cursor() as cursor:
@@ -38,11 +33,12 @@ def initialize_database():
         connection.close()
 
     # 2. Connect to the DB to create tables and seed
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cursor:
-            # Create Users Table
-            cursor.execute("""
+    with app.app_context():
+        conn = mysql.connection
+        try:
+            with conn.cursor() as cursor:
+                # Create Users Table
+                cursor.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
@@ -246,13 +242,11 @@ def initialize_database():
                         (book["title"], book["author"], book["category"], book["price"], book["img"], book["condition"], book["description"])
                     )
 
-        conn.commit()
-        print("Database checked and initialized successfully!")
-    except Exception as e:
-        conn.rollback()
-        print(f"Error checking/initializing database: {e}")
-    finally:
-        conn.close()
+            conn.commit()
+            print("Database checked and initialized successfully!")
+        except Exception as e:
+            conn.rollback()
+            print(f"Error checking/initializing database: {e}")
 
 # ==========================
 # SECURITY & ROUTING MIDDLEWARE
@@ -312,11 +306,10 @@ def home():
 def books():
     categories_list = []
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("SELECT name FROM categories")
             categories_list = [row["name"] for row in cursor.fetchall()]
-        conn.close()
     except Exception as e:
         print(f"Error fetching categories for books: {e}")
     return render_template("books.html", categories=categories_list)
@@ -334,7 +327,7 @@ def book_details(id):
 @app.route("/categories")
 def categories():
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT c.name, COUNT(b.id) as book_count
@@ -343,7 +336,6 @@ def categories():
                 GROUP BY c.id, c.name
             """)
             categories_list = cursor.fetchall()
-        conn.close()
         return render_template("categories.html", categories=categories_list)
     except Exception as e:
         return f"Database error: {e}"
@@ -357,11 +349,10 @@ def categories():
 def sell_book():
     categories_list = []
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("SELECT name FROM categories")
             categories_list = [row["name"] for row in cursor.fetchall()]
-        conn.close()
     except Exception as e:
         print(f"Error fetching categories for sell-book: {e}")
     return render_template("user/sell_book.html", categories=categories_list)
@@ -407,13 +398,13 @@ def login():
         password = request.form["password"]
 
         try:
-            conn = get_db_connection()
+            conn = mysql.connection
             with conn.cursor() as cursor:
                 cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
                 user = cursor.fetchone()
-            conn.close()
 
             if user and check_password_hash(user["password"], password):
+                session.clear()
                 session["user"] = user["role"]
                 session["user_id"] = user["id"]
                 session["user_name"] = user["name"]
@@ -446,13 +437,13 @@ def admin_login():
         password = request.form["password"]
 
         try:
-            conn = get_db_connection()
+            conn = mysql.connection
             with conn.cursor() as cursor:
                 cursor.execute("SELECT * FROM users WHERE email = %s AND role = 'Admin'", (email,))
                 user = cursor.fetchone()
-            conn.close()
 
             if user and check_password_hash(user["password"], password):
+                session.clear()
                 session["user"] = "Admin"
                 session["user_id"] = user["id"]
                 session["user_name"] = user["name"]
@@ -474,6 +465,8 @@ def admin_login():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     error = None
+    if request.method == "GET":
+        session.clear()
     if request.method == "POST":
         name = request.form.get("name")
         email = request.form.get("email")
@@ -484,7 +477,7 @@ def register():
         else:
             hashed_pwd = generate_password_hash(password)
             try:
-                conn = get_db_connection()
+                conn = mysql.connection
                 with conn.cursor() as cursor:
                     # Check if email exists
                     cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
@@ -496,9 +489,7 @@ def register():
                             (name, email, hashed_pwd)
                         )
                         conn.commit()
-                        conn.close()
                         return redirect(url_for("login", registered="true"))
-                conn.close()
             except Exception as e:
                 error = f"Database error: {e}"
 
@@ -513,18 +504,111 @@ def register():
 def profile():
     if "user" not in session:
         return redirect(url_for("login"))
+
+    user_id = session.get("user_id")
+    
+    total_orders = 0
+    my_listings_count = 0
+    wishlist_count = 0
+    wallet_balance = 0.0
+    user_recent_orders = []
+    seller_revenue = 0.0
+    books_sold_count = 0
+    avg_order_val = 0.0
+    recent_sales_log = []
+
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
-            cursor.execute("SELECT name, avatar FROM users WHERE id = %s", (session.get("user_id"),))
+            # 1. Fetch user profile data
+            cursor.execute("SELECT name, email, avatar FROM users WHERE id = %s", (user_id,))
             user = cursor.fetchone()
-        conn.close()
-        if user:
-            session["user_name"] = user["name"]
-            session["user_avatar"] = user["avatar"]
+            if user:
+                session["user_name"] = user["name"]
+                if user.get("avatar"):
+                    session["user_avatar"] = user["avatar"]
+
+            # 2. Total orders placed by this user
+            cursor.execute("SELECT COUNT(*) as count FROM orders WHERE user_id = %s", (user_id,))
+            res_orders = cursor.fetchone()
+            total_orders = res_orders["count"] if res_orders else 0
+
+            # 3. My Listings count (books created by user)
+            cursor.execute("SELECT COUNT(*) as count FROM books WHERE seller_id = %s", (user_id,))
+            res_listings = cursor.fetchone()
+            my_listings_count = res_listings["count"] if res_listings else 0
+
+            # 4. Wishlist items count
+            cursor.execute("SELECT COUNT(*) as count FROM wishlist_items WHERE user_id = %s", (user_id,))
+            res_wishlist = cursor.fetchone()
+            wishlist_count = res_wishlist["count"] if res_wishlist else 0
+
+            # 5. User's Recent Orders (top 5)
+            cursor.execute("""
+                SELECT o.id, o.order_number, o.created_at, o.total_amount, o.status,
+                       (SELECT GROUP_CONCAT(b.title SEPARATOR ', ')
+                        FROM order_items oi
+                        JOIN books b ON oi.book_id = b.id
+                        WHERE oi.order_id = o.id) as item_titles
+                FROM orders o
+                WHERE o.user_id = %s
+                ORDER BY o.created_at DESC
+                LIMIT 5
+            """, (user_id,))
+            raw_user_orders = cursor.fetchall()
+            for o in raw_user_orders:
+                o_date = o["created_at"].strftime("%b %d, %Y") if o.get("created_at") else ""
+                user_recent_orders.append({
+                    "order_number": o["order_number"],
+                    "date": o_date,
+                    "items": o["item_titles"] or "Book Items",
+                    "total": f"{float(o['total_amount']):.2f}",
+                    "status": o["status"] or "Processing"
+                })
+
+            # 6. Seller Analytics & Sales Log for this user's listed books
+            cursor.execute("""
+                SELECT oi.price, oi.quantity, b.title, o.created_at, u.name as buyer_name
+                FROM order_items oi
+                JOIN books b ON oi.book_id = b.id
+                JOIN orders o ON oi.order_id = o.id
+                LEFT JOIN users u ON o.user_id = u.id
+                WHERE b.seller_id = %s
+                ORDER BY o.created_at DESC
+            """, (user_id,))
+            sales_rows = cursor.fetchall()
+
+            for s in sales_rows:
+                earnings = float(s["price"]) * int(s["quantity"])
+                seller_revenue += earnings
+                books_sold_count += int(s["quantity"])
+                s_date = s["created_at"].strftime("%b %d, %Y") if s.get("created_at") else ""
+                recent_sales_log.append({
+                    "title": s["title"],
+                    "buyer_name": s["buyer_name"] or "Guest",
+                    "earnings": f"{earnings:.2f}",
+                    "date": s_date
+                })
+
+            if books_sold_count > 0:
+                avg_order_val = seller_revenue / books_sold_count
+                wallet_balance = seller_revenue
+
     except Exception as e:
-        print(f"Error updating profile session: {e}")
-    return render_template("user/profile.html")
+        print(f"Error fetching profile dashboard data: {e}")
+
+    return render_template(
+        "user/profile.html",
+        total_orders=total_orders,
+        my_listings_count=my_listings_count,
+        wishlist_count=wishlist_count,
+        wallet_balance=f"{wallet_balance:.2f}",
+        user_recent_orders=user_recent_orders,
+        seller_revenue=f"{seller_revenue:.2f}",
+        books_sold_count=books_sold_count,
+        avg_order_val=f"{avg_order_val:.2f}",
+        recent_sales_log=recent_sales_log
+    )
 
 
 @app.route("/profile/details")
@@ -533,11 +617,10 @@ def profile_details():
         return redirect(url_for("login"))
 
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("SELECT name, shipping_address, avatar FROM users WHERE id = %s", (session.get("user_id"),))
             user = cursor.fetchone()
-        conn.close()
         address = user["shipping_address"] if user else ""
         if user:
             session["user_name"] = user["name"]
@@ -562,14 +645,13 @@ def update_profile():
         return "Name is required", 400
 
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute(
                 "UPDATE users SET name = %s, shipping_address = %s WHERE id = %s",
                 (name, shipping_address, session.get("user_id"))
             )
         conn.commit()
-        conn.close()
 
         # Sync updated name back to the session
         session["user_name"] = name
@@ -590,11 +672,10 @@ def update_avatar_api():
         if not avatar:
             return jsonify({"error": "No avatar data provided"}), 400
 
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("UPDATE users SET avatar = %s WHERE id = %s", (avatar, session.get("user_id")))
         conn.commit()
-        conn.close()
 
         # Save in session for instant display
         session["user_avatar"] = avatar
@@ -626,7 +707,7 @@ def admin_dashboard():
         return redirect(url_for("admin_login"))
 
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             # 1. Total Books Count
             cursor.execute("SELECT COUNT(*) as count FROM books")
@@ -659,7 +740,6 @@ def admin_dashboard():
             """)
             recent_orders = cursor.fetchall()
 
-        conn.close()
         return render_template(
             "admin/dashboard.html",
             total_books=total_books,
@@ -678,7 +758,7 @@ def admin_orders():
         return redirect(url_for("admin_login"))
 
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT o.*, u.name as customer_name,
@@ -691,7 +771,6 @@ def admin_orders():
                 ORDER BY o.created_at DESC
             """)
             orders_list = cursor.fetchall()
-        conn.close()
         return render_template("admin/orders.html", orders=orders_list)
     except Exception as e:
         return f"Database error: {e}"
@@ -703,7 +782,7 @@ def admin_order_details(order_id):
         return jsonify({"success": False, "error": "Unauthorized"}), 403
 
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT o.id, o.order_number, o.total_amount, o.payment_method, o.status, o.created_at,
@@ -716,7 +795,6 @@ def admin_order_details(order_id):
             order = cursor.fetchone()
 
             if not order:
-                conn.close()
                 return jsonify({"success": False, "error": "Order not found"}), 404
 
             date_str = order["created_at"].strftime("%B %d, %Y %I:%M %p") if order.get("created_at") else "N/A"
@@ -759,8 +837,6 @@ def admin_order_details(order_id):
                 "total_items_count": total_items_count,
                 "items": items
             }
-
-        conn.close()
         return jsonify({"success": True, "order": order_details})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -792,7 +868,7 @@ def admin_add_book():
             error = "Title, Author, Category, and Price are required"
         else:
             try:
-                conn = get_db_connection()
+                conn = mysql.connection
                 with conn.cursor() as cursor:
                     cursor.execute(
                         """
@@ -802,7 +878,6 @@ def admin_add_book():
                         (title, author, category_name, float(price), book_condition, img, description, session.get("user_id"))
                     )
                 conn.commit()
-                conn.close()
                 return redirect(url_for("admin_books", success="true"))
             except Exception as e:
                 error = f"Database error: {e}"
@@ -810,11 +885,10 @@ def admin_add_book():
     # Load categories for the dropdown list
     categories_list = []
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("SELECT name FROM categories")
             categories_list = [row["name"] for row in cursor.fetchall()]
-        conn.close()
     except Exception as e:
         print(f"Error fetching categories: {e}")
         
@@ -831,7 +905,7 @@ def admin_edit_book(id):
     
     # 1. Fetch the book to edit
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT b.*, u.name AS seller_name, u.email AS seller_email 
@@ -840,7 +914,6 @@ def admin_edit_book(id):
                 WHERE b.id = %s
             """, (id,))
             book = cursor.fetchone()
-        conn.close()
     except Exception as e:
         error = f"Database error: {e}"
         
@@ -861,7 +934,7 @@ def admin_edit_book(id):
             error = "Title, Author, Category, and Price are required"
         else:
             try:
-                conn = get_db_connection()
+                conn = mysql.connection
                 with conn.cursor() as cursor:
                     cursor.execute(
                         """
@@ -872,7 +945,6 @@ def admin_edit_book(id):
                         (title, author, category_name, float(price), book_condition, img, description, id)
                     )
                 conn.commit()
-                conn.close()
                 return redirect(url_for("admin_books", success="true"))
             except Exception as e:
                 error = f"Database error: {e}"
@@ -880,11 +952,10 @@ def admin_edit_book(id):
     # 3. Load categories for dropdown
     categories_list = []
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("SELECT name FROM categories")
             categories_list = [row["name"] for row in cursor.fetchall()]
-        conn.close()
     except Exception as e:
         print(f"Error fetching categories: {e}")
         
@@ -897,7 +968,7 @@ def admin_categories():
         return redirect(url_for("admin_login"))
 
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT c.id, c.name, COUNT(b.id) as book_count
@@ -906,7 +977,6 @@ def admin_categories():
                 GROUP BY c.id, c.name
             """)
             categories_list = cursor.fetchall()
-        conn.close()
         return render_template("admin/categories.html", categories=categories_list)
     except Exception as e:
         return f"Database error: {e}"
@@ -923,16 +993,14 @@ def admin_add_category():
 
     name = name.strip()
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("SELECT id FROM categories WHERE name = %s", (name,))
             if cursor.fetchone():
-                conn.close()
                 return redirect(url_for("admin_categories", error=f"Category '{name}' already exists"))
 
             cursor.execute("INSERT INTO categories (name) VALUES (%s)", (name,))
         conn.commit()
-        conn.close()
         return redirect(url_for("admin_categories", added="true"))
     except Exception as e:
         return redirect(url_for("admin_categories", error=f"Database error: {e}"))
@@ -949,26 +1017,23 @@ def admin_edit_category(id):
 
     name = name.strip()
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("SELECT name FROM categories WHERE id = %s", (id,))
             old_category = cursor.fetchone()
             if not old_category:
-                conn.close()
                 return redirect(url_for("admin_categories", error="Category not found"))
 
             old_name = old_category["name"]
 
             cursor.execute("SELECT id FROM categories WHERE name = %s AND id != %s", (name, id))
             if cursor.fetchone():
-                conn.close()
                 return redirect(url_for("admin_categories", error=f"Category '{name}' already exists"))
 
             cursor.execute("UPDATE categories SET name = %s WHERE id = %s", (name, id))
             cursor.execute("UPDATE books SET category_name = %s WHERE category_name = %s", (name, old_name))
 
         conn.commit()
-        conn.close()
         return redirect(url_for("admin_categories", success="true"))
     except Exception as e:
         return redirect(url_for("admin_categories", error=f"Database error: {e}"))
@@ -980,11 +1045,10 @@ def admin_delete_category(id):
         return redirect(url_for("admin_login"))
 
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("DELETE FROM categories WHERE id = %s", (id,))
         conn.commit()
-        conn.close()
         return redirect(url_for("admin_categories", deleted="true"))
     except Exception as e:
         return redirect(url_for("admin_categories", error=f"Database error: {e}"))
@@ -996,11 +1060,10 @@ def admin_users():
         return redirect(url_for("admin_login"))
 
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("SELECT id, name, email, role, created_at FROM users")
             users_list = cursor.fetchall()
-        conn.close()
         return render_template("admin/users.html", users=users_list)
     except Exception as e:
         return f"Database error: {e}"
@@ -1012,7 +1075,7 @@ def admin_user_details(user_id):
         return jsonify({"success": False, "error": "Unauthorized"}), 403
 
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT id, name, email, role, shipping_address, avatar, created_at
@@ -1022,7 +1085,6 @@ def admin_user_details(user_id):
             user = cursor.fetchone()
 
             if not user:
-                conn.close()
                 return jsonify({"success": False, "error": "User not found"}), 404
 
             formatted_date = user["created_at"].strftime("%B %d, %Y") if user.get("created_at") else "N/A"
@@ -1067,7 +1129,7 @@ def admin_user_details(user_id):
                 "email": user["email"],
                 "role": user["role"] or "User",
                 "shipping_address": user["shipping_address"] or "No address saved",
-                "avatar": user["avatar"] or f"https://i.pravatar.cc/120?u={user['email']}",
+                "avatar": user["avatar"] or "",
                 "created_at": formatted_date,
                 "total_orders": total_orders,
                 "total_spent": f"{total_spent_val:.2f}",
@@ -1075,7 +1137,6 @@ def admin_user_details(user_id):
                 "recent_orders": recent_orders
             }
 
-        conn.close()
         return jsonify({"success": True, "user": user_details})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -1087,7 +1148,7 @@ def admin_sellers():
         return redirect(url_for("admin_login"))
 
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT DISTINCT u.id, u.name, u.email, COUNT(b.id) as book_count
@@ -1096,7 +1157,6 @@ def admin_sellers():
                 GROUP BY u.id
             """)
             sellers_list = cursor.fetchall()
-        conn.close()
         return render_template("admin/sellers.html", sellers=sellers_list)
     except Exception as e:
         return f"Database error: {e}"
@@ -1108,7 +1168,7 @@ def admin_reports():
         return redirect(url_for("admin_login"))
         
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             # Sales over time (grouped by date)
             cursor.execute("""
@@ -1128,7 +1188,6 @@ def admin_reports():
                 ORDER BY sales_count DESC
             """)
             category_rows = cursor.fetchall()
-        conn.close()
         
         sales_dates = [row["sale_date"] for row in sales_rows]
         sales_revenues = [float(row["daily_revenue"]) for row in sales_rows]
@@ -1153,7 +1212,7 @@ def admin_export_report():
         return redirect(url_for("admin_login"))
         
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT o.order_number, u.name as customer_name, o.total_amount, o.payment_method, o.status, o.created_at
@@ -1162,7 +1221,6 @@ def admin_export_report():
                 ORDER BY o.created_at DESC
             """)
             orders_list = cursor.fetchall()
-        conn.close()
         
         import csv
         from io import StringIO
@@ -1195,7 +1253,7 @@ def admin_export_income_statement():
         return redirect(url_for("admin_login"))
         
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as monthly_sales, COUNT(id) as total_orders
@@ -1204,7 +1262,6 @@ def admin_export_income_statement():
                 ORDER BY month DESC
             """)
             statement_list = cursor.fetchall()
-        conn.close()
         
         import csv
         from io import StringIO
@@ -1230,7 +1287,7 @@ def admin_export_inventory_audit():
         return redirect(url_for("admin_login"))
         
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT b.id, b.title, b.author, b.category_name, b.price, b.book_condition, u.name as seller_name, b.approved, b.created_at
@@ -1239,7 +1296,6 @@ def admin_export_inventory_audit():
                 ORDER BY b.id DESC
             """)
             inventory_list = cursor.fetchall()
-        conn.close()
         
         import csv
         from io import StringIO
@@ -1275,7 +1331,7 @@ def admin_export_seller_verification():
         return redirect(url_for("admin_login"))
         
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT u.id, u.name, u.email, u.role, COUNT(b.id) as books_listed
@@ -1286,7 +1342,6 @@ def admin_export_seller_verification():
                 ORDER BY books_listed DESC
             """)
             seller_list = cursor.fetchall()
-        conn.close()
         
         import csv
         from io import StringIO
@@ -1332,7 +1387,7 @@ def logout():
 @app.route("/api/sync_data")
 def api_sync_data():
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         catalog = []
         cart = []
         wishlist = []
@@ -1399,7 +1454,6 @@ def api_sync_data():
                         "img": row["img"]
                     })
                     
-        conn.close()
         return jsonify({
             "catalog": catalog,
             "cart": cart,
@@ -1421,7 +1475,7 @@ def api_cart_add():
         return jsonify({"error": "Book ID required"}), 400
         
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("SELECT id, quantity FROM cart_items WHERE user_id = %s AND book_id = %s", (session["user_id"], book_id))
             item = cursor.fetchone()
@@ -1430,7 +1484,6 @@ def api_cart_add():
             else:
                 cursor.execute("INSERT INTO cart_items (user_id, book_id, quantity) VALUES (%s, %s, 1)", (session["user_id"], book_id))
         conn.commit()
-        conn.close()
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1448,7 +1501,7 @@ def api_cart_update():
         return jsonify({"error": "Book ID required"}), 400
         
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("SELECT id, quantity FROM cart_items WHERE user_id = %s AND book_id = %s", (session["user_id"], book_id))
             item = cursor.fetchone()
@@ -1459,7 +1512,6 @@ def api_cart_update():
                 else:
                     cursor.execute("UPDATE cart_items SET quantity = %s WHERE id = %s", (new_qty, item["id"]))
         conn.commit()
-        conn.close()
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1476,11 +1528,10 @@ def api_cart_remove():
         return jsonify({"error": "Book ID required"}), 400
         
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("DELETE FROM cart_items WHERE user_id = %s AND book_id = %s", (session["user_id"], book_id))
         conn.commit()
-        conn.close()
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1497,11 +1548,10 @@ def api_wishlist_add():
         return jsonify({"error": "Book ID required"}), 400
         
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("INSERT IGNORE INTO wishlist_items (user_id, book_id) VALUES (%s, %s)", (session["user_id"], book_id))
         conn.commit()
-        conn.close()
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1518,11 +1568,10 @@ def api_wishlist_remove():
         return jsonify({"error": "Book ID required"}), 400
         
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("DELETE FROM wishlist_items WHERE user_id = %s AND book_id = %s", (session["user_id"], book_id))
         conn.commit()
-        conn.close()
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1546,7 +1595,7 @@ def api_book_add():
         return jsonify({"error": "Missing required fields"}), 400
         
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute(
                 """INSERT INTO books 
@@ -1555,7 +1604,6 @@ def api_book_add():
                 (title, author, category, price, img, condition, description, session["user_id"])
             )
         conn.commit()
-        conn.close()
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1572,11 +1620,10 @@ def api_admin_book_approve():
         return jsonify({"error": "Book ID required"}), 400
         
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("UPDATE books SET approved = TRUE WHERE id = %s", (book_id,))
         conn.commit()
-        conn.close()
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1593,11 +1640,10 @@ def api_admin_book_delete():
         return jsonify({"error": "Book ID required"}), 400
         
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("DELETE FROM books WHERE id = %s", (book_id,))
         conn.commit()
-        conn.close()
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1615,14 +1661,13 @@ def checkout():
     user_name = ""
     user_address = ""
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             cursor.execute("SELECT name, shipping_address FROM users WHERE id = %s", (session["user_id"],))
             u = cursor.fetchone()
             if u:
                 user_name = u.get("name", "")
                 user_address = u.get("shipping_address", "")
-        conn.close()
     except Exception as e:
         print(f"Error fetching checkout profile: {e}")
 
@@ -1633,7 +1678,21 @@ def checkout():
 def orders():
     if "user" not in session:
         return redirect(url_for("login"))
-    return render_template("user/orders.html")
+        
+    order_number = session.pop("last_order_number", None)
+    order_payment = session.pop("last_order_payment", None)
+    order_total = session.pop("last_order_total", None)
+    order_address = session.pop("last_order_address", None)
+    has_recent_order = order_number is not None
+
+    return render_template(
+        "user/orders.html",
+        has_recent_order=has_recent_order,
+        order_number=order_number,
+        order_payment=order_payment,
+        order_total=order_total,
+        order_address=order_address
+    )
 
 
 @app.route("/place-order", methods=["POST"])
@@ -1677,7 +1736,7 @@ def place_order():
     order_number = f"#ORD-{random.randint(1000, 9999)}"
     
     try:
-        conn = get_db_connection()
+        conn = mysql.connection
         with conn.cursor() as cursor:
             # Get cart items
             cursor.execute("""
@@ -1689,7 +1748,6 @@ def place_order():
             cart_items = cursor.fetchall()
             
             if not cart_items:
-                conn.close()
                 return redirect(url_for("cart"))
                 
             # Calculate total
@@ -1721,7 +1779,6 @@ def place_order():
             cursor.execute("DELETE FROM cart_items WHERE user_id = %s", (session["user_id"],))
             
         conn.commit()
-        conn.close()
         
         # Save last order details to session
         session["last_order_number"] = order_number

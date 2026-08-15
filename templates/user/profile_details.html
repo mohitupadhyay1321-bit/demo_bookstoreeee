@@ -44,7 +44,9 @@
             {% if session.get('user_avatar') %}
                 <img src="{{ session.get('user_avatar') }}" alt="Avatar" class="rounded-circle shadow-sm mb-3 border border-3 border-secondary" style="width: 120px; height: 120px; object-fit: cover;">
             {% else %}
-                <img src="https://i.pravatar.cc/120?u={{ session.get('user_email') }}" alt="Avatar" class="rounded-circle shadow-sm mb-3 border border-3 border-secondary" style="width: 120px; height: 120px; object-fit: cover;">
+                <div class="bg-secondary bg-opacity-25 text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 border border-3 border-secondary shadow-sm" style="width: 120px; height: 120px;">
+                    <i class="bi bi-person-fill text-secondary" style="font-size: 4rem;"></i>
+                </div>
             {% endif %}
             <h5 class="fw-bold text-white mb-1">{{ session.get('user_name') or 'User' }}</h5>
             <p class="text-muted small">Member since July 2026</p>

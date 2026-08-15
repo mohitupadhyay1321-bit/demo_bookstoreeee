@@ -95,7 +95,9 @@
                 {% if session.get('user_avatar') %}
                     <img src="{{ session.get('user_avatar') }}" alt="Avatar" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%;">
                 {% else %}
-                    <img src="https://i.pravatar.cc/40?u={{ session.get('user_email') }}" alt="Avatar">
+                    <div class="bg-secondary bg-opacity-50 text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="bi bi-person-fill fs-5"></i>
+                    </div>
                 {% endif %}
             </div>
         </div>

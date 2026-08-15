@@ -494,13 +494,19 @@ function renderOrderConfirmedPage() {
 
     if (!orderIdEl && !paymentMethodEl && !totalAmountEl) return;
 
-    const lastTotal = localStorage.getItem('bookbazar_last_order_total') || '898';
-    const lastPayment = localStorage.getItem('bookbazar_last_payment_method') || 'Cash on Delivery';
-    const lastOrderId = localStorage.getItem('bookbazar_last_order_id') || '#ORD-9082';
+    const lastTotal = localStorage.getItem('bookbazar_last_order_total');
+    const lastPayment = localStorage.getItem('bookbazar_last_payment_method');
+    const lastOrderId = localStorage.getItem('bookbazar_last_order_id');
 
-    if (orderIdEl) orderIdEl.textContent = lastOrderId;
-    if (paymentMethodEl) paymentMethodEl.textContent = lastPayment;
-    if (totalAmountEl) totalAmountEl.textContent = `₹${lastTotal}`;
+    if (lastOrderId) {
+        if (orderIdEl) orderIdEl.textContent = lastOrderId;
+        if (paymentMethodEl) paymentMethodEl.textContent = lastPayment || 'Cash on Delivery';
+        if (totalAmountEl) totalAmountEl.textContent = `₹${lastTotal || '0.00'}`;
+        
+        localStorage.removeItem('bookbazar_last_order_total');
+        localStorage.removeItem('bookbazar_last_payment_method');
+        localStorage.removeItem('bookbazar_last_order_id');
+    }
 }
 
 window.currentCategoryFilter = 'all';
@@ -874,6 +880,9 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 localStorage.removeItem('bookbazar_cart');
                 localStorage.removeItem('bookbazar_wishlist');
+                localStorage.removeItem('bookbazar_last_order_total');
+                localStorage.removeItem('bookbazar_last_payment_method');
+                localStorage.removeItem('bookbazar_last_order_id');
             }
 
             // Initial UI state setup

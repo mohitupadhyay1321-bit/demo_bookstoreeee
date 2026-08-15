@@ -633,6 +633,152 @@ def profile_details():
     return render_template("user/profile_details.html", address=address, success=success)
 
 
+# ==========================
+# MY LISTINGS
+# ==========================
+
+@app.route("/my-listings")
+def my_listings():
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session.get("user_id")
+    my_books = []
+    total_listed = 0
+    approved_count = 0
+    pending_count = 0
+
+    try:
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, title, author, category_name, price, original_price, img, book_condition, condition_description, approved, created_at
+                FROM books
+                WHERE seller_id = %s
+                ORDER BY id DESC
+            """, (user_id,))
+            rows = cursor.fetchall()
+            
+            total_listed = len(rows)
+            for b in rows:
+                if b.get("approved"):
+                    approved_count += 1
+                else:
+                    pending_count += 1
+
+                created_str = b["created_at"].strftime("%b %d, %Y") if b.get("created_at") else "N/A"
+                my_books.append({
+                    "id": b["id"],
+                    "title": b["title"],
+                    "author": b["author"],
+                    "category_name": b["category_name"],
+                    "price": f"{float(b['price']):.2f}",
+                    "original_price": f"{float(b['original_price']):.2f}" if b.get("original_price") else None,
+                    "img": b["img"] or "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300",
+                    "condition": b["book_condition"] or "Good",
+                    "description": b["condition_description"] or "",
+                    "approved": bool(b["approved"]),
+                    "created_at": created_str
+                })
+    except Exception as e:
+        print(f"Error fetching user listings: {e}")
+
+    success = request.args.get("success")
+    deleted = request.args.get("deleted")
+    error = request.args.get("error")
+
+    return render_template(
+        "user/my_listings.html",
+        my_books=my_books,
+        total_listed=total_listed,
+        approved_count=approved_count,
+        pending_count=pending_count,
+        success=success,
+        deleted=deleted,
+        error=error
+    )
+
+
+@app.route("/my-listings/delete/<int:id>", methods=["POST"])
+def delete_my_listing(id):
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session.get("user_id")
+    try:
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            # Verify book belongs to this user
+            cursor.execute("SELECT id FROM books WHERE id = %s AND seller_id = %s", (id, user_id))
+            book = cursor.fetchone()
+            if not book:
+                return redirect(url_for("my_listings", error="Listing not found or access denied"))
+
+            cursor.execute("DELETE FROM books WHERE id = %s AND seller_id = %s", (id, user_id))
+        conn.commit()
+        return redirect(url_for("my_listings", deleted="true"))
+    except Exception as e:
+        return redirect(url_for("my_listings", error=f"Error deleting listing: {e}"))
+
+
+@app.route("/my-listings/edit/<int:id>", methods=["GET", "POST"])
+def edit_my_listing(id):
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session.get("user_id")
+    error = None
+    book = None
+
+    try:
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM books WHERE id = %s AND seller_id = %s", (id, user_id))
+            book = cursor.fetchone()
+    except Exception as e:
+        error = f"Database error: {e}"
+
+    if not book:
+        return redirect(url_for("my_listings", error="Listing not found or access denied"))
+
+    if request.method == "POST":
+        title = request.form.get("title")
+        author = request.form.get("author")
+        category_name = request.form.get("category_name")
+        price = request.form.get("price")
+        book_condition = request.form.get("book_condition", "Good")
+        img = request.form.get("img") or book["img"]
+        description = request.form.get("description")
+
+        if not (title and author and category_name and price):
+            error = "Title, Author, Category, and Price are required"
+        else:
+            try:
+                conn = mysql.connection
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE books
+                        SET title = %s, author = %s, category_name = %s, price = %s, book_condition = %s, img = %s, condition_description = %s
+                        WHERE id = %s AND seller_id = %s
+                    """, (title, author, category_name, float(price), book_condition, img, description, id, user_id))
+                conn.commit()
+                return redirect(url_for("my_listings", success="true"))
+            except Exception as e:
+                error = f"Database error: {e}"
+
+    # Fetch categories for dropdown
+    categories_list = []
+    try:
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT name FROM categories")
+            categories_list = [row["name"] for row in cursor.fetchall()]
+    except Exception as e:
+        print(f"Error fetching categories: {e}")
+
+    return render_template("user/edit_listing.html", book=book, categories=categories_list, error=error)
+
+
 @app.route("/update-profile", methods=["POST"])
 def update_profile():
     if "user" not in session:
@@ -1412,6 +1558,7 @@ def api_sync_data():
                     "description": row["condition_description"] or "",
                     "approved": bool(row["approved"]),
                     "category": row["category_name"],
+                    "seller_id": row["seller_id"],
                     "seller_name": row["seller_name"] or "Store"
                 })
             
@@ -1458,6 +1605,7 @@ def api_sync_data():
             "catalog": catalog,
             "cart": cart,
             "wishlist": wishlist,
+            "user_id": session.get("user_id"),
             "isLoggedIn": True if "user_id" in session else False
         })
     except Exception as e:

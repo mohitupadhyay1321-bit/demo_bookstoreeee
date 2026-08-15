@@ -833,7 +833,8 @@ function renderUserSubmissions() {
     if (!tableBody) return;
 
     const catalog = getCatalog();
-    const userBooks = catalog.filter(item => item.id > 8);
+    const currentUserId = window.currentUserId;
+    const userBooks = catalog.filter(item => item.seller_id && currentUserId && item.seller_id == currentUserId);
 
     let html = '';
     userBooks.forEach(item => {
@@ -854,11 +855,6 @@ function renderUserSubmissions() {
     });
 
     tableBody.innerHTML = html || '<tr><td colspan="5" class="text-center text-muted py-4">You haven\'t listed any books for sale yet.</td></tr>';
-
-    const countEl = document.getElementById('stats-my-listings-count');
-    if (countEl) {
-        countEl.textContent = userBooks.length;
-    }
 }
 
 // 5. Global click delegate for "Add to Cart" and "Add to Wishlist" buttons
@@ -871,6 +867,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error("Failed to sync database data:", data.error);
                 return;
             }
+            
+            window.currentUserId = data.user_id;
             
             // Seed localStorage from database
             localStorage.setItem('bookbazar_catalog', JSON.stringify(data.catalog));

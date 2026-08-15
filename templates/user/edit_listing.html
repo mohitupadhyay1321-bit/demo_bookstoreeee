@@ -1,0 +1,78 @@
+{% extends 'layouts/user_base.html' %}
+
+{% block title %}Edit Book Listing | BookBazar{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow rounded-4 p-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="fw-bold m-0 text-white"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Book Listing</h3>
+                    <a href="{{ url_for('my_listings') }}" class="btn btn-outline-secondary rounded-pill px-3">
+                        <i class="bi bi-arrow-left me-1"></i> Back to My Listings
+                    </a>
+                </div>
+
+                {% if error %}
+                <div class="alert alert-danger rounded-4 mb-4" role="alert">
+                    <i class="bi bi-exclamation-octagon-fill me-2"></i> {{ error }}
+                </div>
+                {% endif %}
+
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Book Title</label>
+                            <input type="text" name="title" class="form-control" value="{{ book.title }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Author</label>
+                            <input type="text" name="author" class="form-control" value="{{ book.author }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Genre/Category</label>
+                            <select name="category_name" class="form-select">
+                                {% for cat in categories %}
+                                <option value="{{ cat }}" {% if cat == book.category_name %}selected{% endif %}>{{ cat }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Selling Price (₹)</label>
+                            <input type="number" step="0.01" name="price" class="form-control" value="{{ book.price }}" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Book Cover Image URL</label>
+                        <input type="text" name="img" class="form-control" value="{{ book.img }}" placeholder="https://...">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Book Condition</label>
+                        <select name="book_condition" class="form-select">
+                            <option value="Like New" {% if book.book_condition == 'Like New' %}selected{% endif %}>Like New (No marks, clean)</option>
+                            <option value="Good" {% if book.book_condition == 'Good' or not book.book_condition %}selected{% endif %}>Good (Minor wear)</option>
+                            <option value="Acceptable" {% if book.book_condition == 'Acceptable' %}selected{% endif %}>Acceptable (Visible wear)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted">Condition Description / Notes</label>
+                        <textarea name="description" class="form-control" rows="3">{{ book.condition_description or '' }}</textarea>
+                    </div>
+
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-primary btn-lg flex-grow-1 rounded-pill">Save Changes</button>
+                        <a href="{{ url_for('my_listings') }}" class="btn btn-outline-light btn-lg rounded-pill px-4">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

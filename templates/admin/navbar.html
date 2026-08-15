@@ -1,9 +1,6 @@
 <nav class="topbar">
-    <div class="d-flex align-items-center gap-3">
+    <div class="d-flex align-items-center">
         <h4 class="m-0 fw-bold">Admin Console</h4>
-        <span class="badge bg-primary bg-opacity-20 text-primary rounded-pill px-3 py-1 small">
-            <i class="bi bi-shield-check me-1"></i> Live
-        </span>
     </div>
     <div class="profile d-flex align-items-center gap-3">
         <!-- Notification Center Dropdown -->
@@ -38,11 +35,12 @@
             </div>
         </div>
 
-        <div class="d-flex align-items-center gap-2">
+        <!-- Admin Profile & Settings Link -->
+        <a href="{{ url_for('admin_settings') }}" class="d-flex align-items-center gap-2 text-decoration-none admin-profile-link" title="Open Admin Settings & Profile">
             <span class="fw-semibold text-white fs-6 d-none d-sm-inline">Administrator</span>
-            <div class="bg-primary bg-opacity-25 text-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: 1px solid rgba(255,255,255,0.2);">
+            <div class="admin-avatar-btn bg-primary bg-opacity-25 text-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s ease;">
                 <i class="bi bi-shield-lock-fill fs-5"></i>
             </div>
-        </div>
+        </a>
     </div>
 </nav>

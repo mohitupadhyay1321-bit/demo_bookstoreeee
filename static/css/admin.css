@@ -274,6 +274,23 @@ body {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
+.admin-profile-link {
+    padding: 4px 8px;
+    border-radius: 50px;
+    transition: all 0.2s ease;
+}
+
+.admin-profile-link:hover span {
+    color: var(--primary-glow) !important;
+}
+
+.admin-profile-link:hover .admin-avatar-btn {
+    transform: scale(1.08);
+    border-color: rgba(99, 102, 241, 0.6) !important;
+    background: rgba(99, 102, 241, 0.35) !important;
+    box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
+}
+
 /*==========================
  CONTENT CONTAINER
 ==========================*/

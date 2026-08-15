@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 from flask_mysqldb import MySQL
 import MySQLdb
 import MySQLdb.cursors
@@ -33,12 +33,18 @@ def initialize_database():
         connection.close()
 
     # 2. Connect to the DB to create tables and seed
-    with app.app_context():
-        conn = mysql.connection
-        try:
-            with conn.cursor() as cursor:
-                # Create Users Table
-                cursor.execute("""
+    db_conn = MySQLdb.connect(
+        host=app.config["MYSQL_HOST"],
+        user=app.config["MYSQL_USER"],
+        password=app.config["MYSQL_PASSWORD"],
+        db=app.config["MYSQL_DB"],
+        charset='utf8mb4',
+        cursorclass=MySQLdb.cursors.DictCursor
+    )
+    try:
+        with db_conn.cursor() as cursor:
+            # Create Users Table
+            cursor.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
@@ -139,6 +145,30 @@ def initialize_database():
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """)
 
+            # Create Store Settings Table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS store_settings (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    setting_key VARCHAR(100) UNIQUE NOT NULL,
+                    setting_value TEXT
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """)
+
+            # Seed default store configuration
+            default_settings = [
+                ("store_name", "BookBazar"),
+                ("support_email", "support@bookbazar.com"),
+                ("contact_phone", "+91 9876543210"),
+                ("currency", "INR"),
+                ("auto_approve", "false")
+            ]
+            for key, val in default_settings:
+                cursor.execute("""
+                    INSERT INTO store_settings (setting_key, setting_value)
+                    VALUES (%s, %s)
+                    ON DUPLICATE KEY UPDATE setting_key = setting_key
+                """, (key, val))
+
             # Seed default categories
             categories = ["Fiction", "Programming", "Science", "Business", "Biography"]
             for cat in categories:
@@ -173,44 +203,44 @@ def initialize_database():
                     "price": 399.00,
                     "img": "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300",
                     "condition": "new",
-                    "description": "Rules for Focused Success in a Distracted World. Master difficult skills quickly and produce better results in less time.",
+                    "description": "Rules for Focused Success in a Distracted World. Master your focus to achieve extraordinary results.",
+                    "category": "Business"
+                },
+                {
+                    "title": "Clean Code",
+                    "author": "Robert C. Martin",
+                    "price": 599.00,
+                    "img": "https://images.unsplash.com/photo-1532012164546-f432f2e3edd7?w=300",
+                    "condition": "new",
+                    "description": "A Handbook of Agile Software Craftsmanship. Learn how to write robust, maintainable, and readable software.",
                     "category": "Programming"
                 },
                 {
                     "title": "Rich Dad Poor Dad",
-                    "author": "Robert Kiyosaki",
+                    "author": "Robert T. Kiyosaki",
                     "price": 299.00,
-                    "img": "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300",
-                    "condition": "new",
-                    "description": "What the Rich Teach Their Kids About Money That the Poor and Middle Class Do Not!",
+                    "img": "https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=300",
+                    "condition": "pre-loved",
+                    "description": "What the rich teach their kids about money that the poor and middle class do not! A classic personal finance guide.",
                     "category": "Business"
                 },
                 {
                     "title": "The Psychology of Money",
                     "author": "Morgan Housel",
-                    "price": 599.00,
-                    "img": "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=300",
-                    "condition": "new",
-                    "description": "Timeless lessons on wealth, greed, and happiness. Doing well with money isn't necessarily about what you know. It's about how you behave.",
+                    "price": 349.00,
+                    "img": "https://images.unsplash.com/photo-1592496431122-2349e0fbc666?w=300",
+                    "condition": "pre-loved",
+                    "description": "Timeless lessons on wealth, greed, and happiness doing well with money isn't necessarily about what you know.",
                     "category": "Business"
                 },
                 {
-                    "title": "The Alchemist",
-                    "author": "Paulo Coelho",
-                    "price": 149.00,
-                    "img": "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=300",
-                    "condition": "pre-loved",
-                    "description": "A beautiful story about following your dreams. Highly inspiring fable about a shepherd boy who travels in search of worldly treasures.",
-                    "category": "Fiction"
-                },
-                {
-                    "title": "Zero to One",
-                    "author": "Peter Thiel",
+                    "title": "To Kill a Mockingbird",
+                    "author": "Harper Lee",
                     "price": 199.00,
-                    "img": "https://images.unsplash.com/photo-1531988042231-d39a9cc12a9a?w=300",
+                    "img": "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300",
                     "condition": "pre-loved",
-                    "description": "Notes on Startups, or How to Build the Future. Learn how to discover new ways of creating value to go from 0 to 1.",
-                    "category": "Business"
+                    "description": "The unforgettable novel of a childhood in a sleepy Southern town and the crisis of conscience that rocked it.",
+                    "category": "Fiction"
                 },
                 {
                     "title": "Thinking, Fast and Slow",
@@ -242,11 +272,89 @@ def initialize_database():
                         (book["title"], book["author"], book["category"], book["price"], book["img"], book["condition"], book["description"])
                     )
 
-            conn.commit()
+            db_conn.commit()
             print("Database checked and initialized successfully!")
-        except Exception as e:
-            conn.rollback()
-            print(f"Error checking/initializing database: {e}")
+    except Exception as e:
+        db_conn.rollback()
+        print(f"Error checking/initializing database: {e}")
+    finally:
+        db_conn.close()
+
+
+def get_store_settings():
+    settings = {
+        "store_name": "BookBazar",
+        "support_email": "support@bookbazar.com",
+        "contact_phone": "+91 9876543210",
+        "currency": "INR",
+        "auto_approve": False
+    }
+    try:
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT setting_key, setting_value FROM store_settings")
+            rows = cursor.fetchall()
+            for r in rows:
+                key = r["setting_key"]
+                val = r["setting_value"]
+                if key == "auto_approve":
+                    settings[key] = (val == "true" or val == "1" or val is True)
+                else:
+                    settings[key] = val
+    except Exception:
+        pass
+    return settings
+
+
+def update_store_setting(key, value):
+    try:
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO store_settings (setting_key, setting_value)
+                VALUES (%s, %s)
+                ON DUPLICATE KEY UPDATE setting_value = %s
+            """, (key, str(value), str(value)))
+        conn.commit()
+    except Exception as e:
+        print(f"Error updating store setting {key}: {e}")
+
+
+@app.context_processor
+def inject_global_store_data():
+    settings = get_store_settings()
+    name = settings.get("store_name", "BookBazar")
+    
+    # Split brand name cleanly for stylized logos
+    if " " in name:
+        parts = name.split(" ", 1)
+        brand_p1 = parts[0]
+        brand_p2 = parts[1]
+    else:
+        # If single camelcase or compound word
+        import re
+        parts = re.findall(r'[A-Z][a-z0-9]*', name)
+        if len(parts) >= 2:
+            brand_p1 = parts[0]
+            brand_p2 = "".join(parts[1:])
+        elif len(name) > 4:
+            mid = len(name) // 2
+            brand_p1 = name[:mid]
+            brand_p2 = name[mid:]
+        else:
+            brand_p1 = name
+            brand_p2 = ""
+            
+    return {
+        "store_config": settings,
+        "store_name": name,
+        "brand_part1": brand_p1,
+        "brand_part2": brand_p2,
+        "support_email": settings.get("support_email", "support@bookbazar.com"),
+        "contact_phone": settings.get("contact_phone", "+91 9876543210"),
+        "store_currency": settings.get("currency", "INR")
+    }
+
 
 # ==========================
 # SECURITY & ROUTING MIDDLEWARE
@@ -1808,11 +1916,109 @@ def admin_export_seller_verification():
         return f"Error exporting seller verification: {e}"
 
 
-@app.route("/admin/settings")
+@app.route("/admin/settings", methods=["GET", "POST"])
 def admin_settings():
     if "user" not in session or session.get("user") != "Admin":
         return redirect(url_for("admin_login"))
-    return render_template("admin/settings.html")
+
+    admin_id = session.get("user_id")
+    admin_user = None
+
+    try:
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            if admin_id:
+                cursor.execute("SELECT * FROM users WHERE id = %s AND role = 'Admin'", (admin_id,))
+                admin_user = cursor.fetchone()
+            if not admin_user:
+                cursor.execute("SELECT * FROM users WHERE role = 'Admin' ORDER BY id ASC LIMIT 1")
+                admin_user = cursor.fetchone()
+    except Exception as e:
+        flash(f"Database error: {e}", "danger")
+
+    if not admin_user:
+        admin_user = {
+            "id": 1,
+            "name": session.get("user_name", "Administrator"),
+            "email": session.get("user_email", "admin@bookbazar.com")
+        }
+
+    if request.method == "POST":
+        action = request.form.get("action")
+
+        if action == "update_profile":
+            name = request.form.get("name", "").strip()
+            email = request.form.get("email", "").strip()
+
+            if not name or not email:
+                flash("Name and email are required fields.", "danger")
+            else:
+                try:
+                    conn = mysql.connection
+                    with conn.cursor() as cursor:
+                        cursor.execute("SELECT id FROM users WHERE email = %s AND id != %s", (email, admin_user["id"]))
+                        existing = cursor.fetchone()
+                        if existing:
+                            flash("That email address is already in use by another account.", "danger")
+                        else:
+                            cursor.execute("UPDATE users SET name = %s, email = %s WHERE id = %s", (name, email, admin_user["id"]))
+                            conn.commit()
+                            session["user_name"] = name
+                            session["user_email"] = email
+                            admin_user["name"] = name
+                            admin_user["email"] = email
+                            flash("Administrator profile updated successfully!", "success")
+                except Exception as e:
+                    flash(f"Error updating profile: {e}", "danger")
+
+        elif action == "change_password":
+            current_pwd = request.form.get("current_password", "").strip()
+            new_pwd = request.form.get("new_password", "").strip()
+            confirm_pwd = request.form.get("confirm_password", "").strip()
+
+            if not current_pwd or not new_pwd or not confirm_pwd:
+                flash("All password fields are required.", "danger")
+            elif len(new_pwd) < 6:
+                flash("New password must be at least 6 characters long.", "danger")
+            elif new_pwd != confirm_pwd:
+                flash("New password and confirmation password do not match.", "danger")
+            else:
+                try:
+                    conn = mysql.connection
+                    with conn.cursor() as cursor:
+                        cursor.execute("SELECT password FROM users WHERE id = %s", (admin_user["id"],))
+                        db_user = cursor.fetchone()
+
+                        if not db_user or not check_password_hash(db_user["password"], current_pwd):
+                            flash("Current password is incorrect.", "danger")
+                        else:
+                            new_hashed = generate_password_hash(new_pwd)
+                            cursor.execute("UPDATE users SET password = %s WHERE id = %s", (new_hashed, admin_user["id"]))
+                            conn.commit()
+                            flash("Admin password has been changed successfully!", "success")
+                except Exception as e:
+                    flash(f"Error changing password: {e}", "danger")
+
+        elif action == "update_store":
+            store_name = request.form.get("store_name", "BookBazar").strip()
+            support_email = request.form.get("support_email", "support@bookbazar.com").strip()
+            contact_phone = request.form.get("contact_phone", "+91 9876543210").strip()
+            currency = request.form.get("currency", "INR")
+            auto_approve = "true" if request.form.get("auto_approve") == "on" else "false"
+
+            update_store_setting("store_name", store_name)
+            update_store_setting("support_email", support_email)
+            update_store_setting("contact_phone", contact_phone)
+            update_store_setting("currency", currency)
+            update_store_setting("auto_approve", auto_approve)
+
+            flash("Store preferences updated successfully across the entire site!", "success")
+
+        return redirect(url_for("admin_settings"))
+
+    store_config = get_store_settings()
+
+    return render_template("admin/settings.html", admin_user=admin_user, store_config=store_config)
 
 
 @app.route("/logout")

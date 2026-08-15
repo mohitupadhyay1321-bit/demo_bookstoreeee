@@ -1,7 +1,7 @@
 <header>
     <div class="navbar">
         <a href="{{ url_for('home') }}" class="logo">
-            Book<span>Bazar</span>
+            {{ brand_part1 }}{% if brand_part2 %}<span>{{ brand_part2 }}</span>{% endif %}
         </a>
         <ul class="nav-links">
             <li><a href="{{ url_for('home') }}">Home</a></li>

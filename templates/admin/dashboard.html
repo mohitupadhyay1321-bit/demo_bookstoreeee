@@ -8,7 +8,7 @@
 <div class="d-flex justify-content-between align-items-center mb-5">
     <div>
         <h2 class="fw-bold m-0">Dashboard Overview</h2>
-        <p class="text-muted m-0 mt-1">Real-time statistics and analytics for BookBazar.</p>
+        <p class="text-muted m-0 mt-1">Real-time statistics and analytics for {{ store_name }}.</p>
     </div>
     <div>
         <a href="{{ url_for('admin_export_report') }}" class="btn btn-outline-light rounded-pill px-4 me-2">
@@ -26,13 +26,9 @@
     <div class="col-md-3">
         <div class="card dashboard-card">
             <h5 class="text-muted">Total Books</h5>
-            <h2 class="fw-bold text-white mb-2" id="stat-total-books">{{ total_books }}</h2>
+            <h2 class="fw-bold text-white mb-0" id="stat-total-books">{{ total_books }}</h2>
             <div class="card-icon-wrapper">
                 <i class="bi bi-book"></i>
-            </div>
-            <div class="trend-indicator up">
-                <i class="bi bi-broadcast text-success me-1"></i>
-                <span class="text-success small">Realtime Database</span>
             </div>
         </div>
     </div>
@@ -41,13 +37,9 @@
     <div class="col-md-3">
         <div class="card dashboard-card">
             <h5 class="text-muted">Total Orders</h5>
-            <h2 class="fw-bold text-white mb-2" id="stat-total-orders">{{ total_orders }}</h2>
+            <h2 class="fw-bold text-white mb-0" id="stat-total-orders">{{ total_orders }}</h2>
             <div class="card-icon-wrapper">
                 <i class="bi bi-cart"></i>
-            </div>
-            <div class="trend-indicator up">
-                <i class="bi bi-broadcast text-success me-1"></i>
-                <span class="text-success small">Realtime Database</span>
             </div>
         </div>
     </div>
@@ -56,13 +48,9 @@
     <div class="col-md-3">
         <div class="card dashboard-card">
             <h5 class="text-muted">Active Users</h5>
-            <h2 class="fw-bold text-white mb-2" id="stat-total-users">{{ total_users }}</h2>
+            <h2 class="fw-bold text-white mb-0" id="stat-total-users">{{ total_users }}</h2>
             <div class="card-icon-wrapper">
                 <i class="bi bi-people"></i>
-            </div>
-            <div class="trend-indicator up">
-                <i class="bi bi-broadcast text-success me-1"></i>
-                <span class="text-success small">Realtime Database</span>
             </div>
         </div>
     </div>
@@ -71,13 +59,9 @@
     <div class="col-md-3">
         <div class="card dashboard-card">
             <h5 class="text-muted">Total Revenue</h5>
-            <h2 class="fw-bold text-white mb-2" id="stat-total-revenue">₹{{ "{:,.2f}".format(total_revenue) }}</h2>
+            <h2 class="fw-bold text-white mb-0" id="stat-total-revenue">₹{{ "{:,.2f}".format(total_revenue) }}</h2>
             <div class="card-icon-wrapper">
                 <i class="bi bi-currency-rupee"></i>
-            </div>
-            <div class="trend-indicator up">
-                <i class="bi bi-broadcast text-success me-1"></i>
-                <span class="text-success small">Realtime Database</span>
             </div>
         </div>
     </div>
@@ -636,7 +620,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // Realtime Database Statistics Polling
+    // Realtime Statistics Polling
     function fetchRealtimeStats() {
         fetch('/api/admin/stats')
             .then(res => res.json())

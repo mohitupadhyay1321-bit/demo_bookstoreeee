@@ -404,15 +404,15 @@ def login():
                 user = cursor.fetchone()
 
             if user and check_password_hash(user["password"], password):
-                session.clear()
-                session["user"] = user["role"]
-                session["user_id"] = user["id"]
-                session["user_name"] = user["name"]
-                session["user_email"] = user["email"]
-                session["user_avatar"] = user.get("avatar")
                 if user["role"] == "Admin":
-                    return redirect(url_for("admin_dashboard"))
+                    error = "Admin accounts cannot log in through the User Portal. Please use the Admin Login."
                 else:
+                    session.clear()
+                    session["user"] = user["role"]
+                    session["user_id"] = user["id"]
+                    session["user_name"] = user["name"]
+                    session["user_email"] = user["email"]
+                    session["user_avatar"] = user.get("avatar")
                     return redirect(url_for("profile"))
             else:
                 error = "Invalid Email or Password"
@@ -420,7 +420,74 @@ def login():
             error = f"Database error: {e}"
 
     registered = request.args.get("registered")
-    return render_template("user/login.html", error=error, registered=registered)
+    password_reset = request.args.get("password_reset")
+    return render_template("user/login.html", error=error, registered=registered, password_reset=password_reset)
+
+
+# ==========================
+# FORGOT & RESET PASSWORD
+# ==========================
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if "user" in session:
+        return redirect(url_for("profile"))
+
+    error = None
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        if not email:
+            error = "Please enter your email address"
+        else:
+            try:
+                conn = mysql.connection
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT id, name, email FROM users WHERE email = %s", (email,))
+                    user = cursor.fetchone()
+
+                if user:
+                    session["reset_email"] = email
+                    return redirect(url_for("reset_password"))
+                else:
+                    error = "No account found with that email address"
+            except Exception as e:
+                error = f"Database error: {e}"
+
+    return render_template("user/forgot_password.html", error=error)
+
+
+@app.route("/reset-password", methods=["GET", "POST"])
+def reset_password():
+    if "reset_email" not in session:
+        return redirect(url_for("forgot_password"))
+
+    email = session["reset_email"]
+    error = None
+
+    if request.method == "POST":
+        new_password = request.form.get("new_password")
+        confirm_password = request.form.get("confirm_password")
+
+        if not new_password or not confirm_password:
+            error = "Both password fields are required"
+        elif new_password != confirm_password:
+            error = "Passwords do not match"
+        elif len(new_password) < 4:
+            error = "Password must be at least 4 characters long"
+        else:
+            try:
+                hashed_pwd = generate_password_hash(new_password)
+                conn = mysql.connection
+                with conn.cursor() as cursor:
+                    cursor.execute("UPDATE users SET password = %s WHERE email = %s", (hashed_pwd, email))
+                conn.commit()
+
+                session.pop("reset_email", None)
+                return redirect(url_for("login", password_reset="true"))
+            except Exception as e:
+                error = f"Database error: {e}"
+
+    return render_template("user/reset_password.html", email=email, error=error)
 
 
 @app.route("/admin-login", methods=["GET", "POST"])
@@ -433,23 +500,26 @@ def admin_login():
 
     error = None
     if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "").strip()
 
         try:
             conn = mysql.connection
             with conn.cursor() as cursor:
-                cursor.execute("SELECT * FROM users WHERE email = %s AND role = 'Admin'", (email,))
+                cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
                 user = cursor.fetchone()
 
             if user and check_password_hash(user["password"], password):
-                session.clear()
-                session["user"] = "Admin"
-                session["user_id"] = user["id"]
-                session["user_name"] = user["name"]
-                session["user_email"] = user["email"]
-                session["user_avatar"] = user.get("avatar")
-                return redirect(url_for("admin_dashboard"))
+                if user["role"] != "Admin":
+                    error = "Access Denied: Standard user accounts cannot access Admin Console."
+                else:
+                    session.clear()
+                    session["user"] = "Admin"
+                    session["user_id"] = user["id"]
+                    session["user_name"] = user["name"]
+                    session["user_email"] = user["email"]
+                    session["user_avatar"] = user.get("avatar")
+                    return redirect(url_for("admin_dashboard"))
             else:
                 error = "Invalid Admin Credentials"
         except Exception as e:
@@ -872,19 +942,99 @@ def admin_dashboard():
             res_rev = cursor.fetchone()["revenue"]
             total_revenue = float(res_rev) if res_rev is not None else 0.0
 
-            # 5. Recent Orders (limit 5)
+            # 5. Category Breakdown Shares from DB
+            cursor.execute("""
+                SELECT category_name, COUNT(*) as cat_count
+                FROM books
+                GROUP BY category_name
+                ORDER BY cat_count DESC
+                LIMIT 4
+            """)
+            cat_rows = cursor.fetchall()
+            category_shares = []
+            if total_books > 0:
+                for cat in cat_rows:
+                    percentage = round((cat["cat_count"] / total_books) * 100)
+                    category_shares.append({
+                        "name": cat["category_name"] or "General",
+                        "count": cat["cat_count"],
+                        "percentage": percentage
+                    })
+
+            # 6. Recent Orders (limit 5)
             cursor.execute("""
                 SELECT o.id, o.order_number, u.name as customer_name,
-                       (SELECT b.title FROM order_items oi 
+                       (SELECT GROUP_CONCAT(b.title SEPARATOR ', ') FROM order_items oi 
                         JOIN books b ON oi.book_id = b.id 
-                        WHERE oi.order_id = o.id LIMIT 1) as book_title,
+                        WHERE oi.order_id = o.id) as book_title,
                        o.total_amount, o.status
                 FROM orders o
                 LEFT JOIN users u ON o.user_id = u.id
-                ORDER BY o.created_at DESC
+                ORDER BY o.created_at DESC, o.id DESC
                 LIMIT 5
             """)
             recent_orders = cursor.fetchall()
+
+            # 7. Pending User Submissions Queue requiring Admin Approval
+            cursor.execute("""
+                SELECT b.id, b.title, b.author, b.category_name, b.price, b.img, b.book_condition, u.name as seller_name, b.created_at
+                FROM books b
+                LEFT JOIN users u ON b.seller_id = u.id
+                WHERE b.approved = FALSE OR b.approved IS NULL
+                ORDER BY b.id DESC
+            """)
+            pending_books = cursor.fetchall()
+            for pb in pending_books:
+                pb["price"] = f"{float(pb['price']):.2f}"
+                pb["created_at_str"] = pb["created_at"].strftime("%b %d, %Y") if pb.get("created_at") else "N/A"
+
+            # 8. Top Performing Books (Most Sold & Catalog Highlights)
+            cursor.execute("""
+                SELECT b.id, b.title, b.author, b.category_name, b.price, b.img,
+                       COALESCE(SUM(oi.quantity), 0) as total_sold,
+                       COALESCE(SUM(oi.price * oi.quantity), 0) as total_generated
+                FROM books b
+                LEFT JOIN order_items oi ON b.id = oi.book_id
+                GROUP BY b.id
+                ORDER BY total_sold DESC, total_generated DESC
+                LIMIT 5
+            """)
+            top_books_raw = cursor.fetchall()
+            top_books = []
+            for tb in top_books_raw:
+                top_books.append({
+                    "id": tb["id"],
+                    "title": tb["title"],
+                    "author": tb["author"],
+                    "category": tb["category_name"] or "General",
+                    "price": f"{float(tb['price']):.2f}",
+                    "img": tb["img"] or "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300",
+                    "total_sold": int(tb["total_sold"]),
+                    "total_generated": f"{float(tb['total_generated']):.2f}"
+                })
+
+            # 9. Realtime System Activity Timeline
+            cursor.execute("""
+                (SELECT 'order' as event_type, CONCAT('New order ', order_number, ' placed for ₹', FORMAT(total_amount, 2)) as title, created_at, 'bi-cart-check-fill text-success' as icon
+                 FROM orders ORDER BY created_at DESC LIMIT 4)
+                UNION ALL
+                (SELECT 'book' as event_type, CONCAT('Book "', title, '" listed for sale') as title, created_at, 'bi-book-fill text-primary' as icon
+                 FROM books ORDER BY created_at DESC LIMIT 4)
+                UNION ALL
+                (SELECT 'user' as event_type, CONCAT('New user account registered: ', name) as title, created_at, 'bi-person-plus-fill text-info' as icon
+                 FROM users WHERE role = 'User' ORDER BY created_at DESC LIMIT 4)
+                ORDER BY created_at DESC
+                LIMIT 6
+            """)
+            activity_rows = cursor.fetchall()
+            recent_activities = []
+            for act in activity_rows:
+                act_time = act["created_at"].strftime("%b %d, %I:%M %p") if act.get("created_at") else "Just now"
+                recent_activities.append({
+                    "title": act["title"],
+                    "time": act_time,
+                    "icon": act["icon"]
+                })
 
         return render_template(
             "admin/dashboard.html",
@@ -892,10 +1042,155 @@ def admin_dashboard():
             total_orders=total_orders,
             total_users=total_users,
             total_revenue=total_revenue,
-            recent_orders=recent_orders
+            category_shares=category_shares,
+            recent_orders=recent_orders,
+            pending_books=pending_books,
+            top_books=top_books,
+            recent_activities=recent_activities
         )
     except Exception as e:
         return f"Database error: {e}"
+
+
+@app.route("/api/admin/stats")
+def api_admin_stats():
+    if "user" not in session or session.get("user") != "Admin":
+        return jsonify({"error": "Unauthorized"}), 403
+
+    try:
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            # 1. Total Books Count
+            cursor.execute("SELECT COUNT(*) as count FROM books")
+            total_books = cursor.fetchone()["count"]
+
+            # 2. Total Orders Count
+            cursor.execute("SELECT COUNT(*) as count FROM orders")
+            total_orders = cursor.fetchone()["count"]
+
+            # 3. Active Users Count (non-Admins)
+            cursor.execute("SELECT COUNT(*) as count FROM users WHERE role = 'User'")
+            total_users = cursor.fetchone()["count"]
+
+            # 4. Total Revenue
+            cursor.execute("SELECT SUM(total_amount) as revenue FROM orders")
+            res_rev = cursor.fetchone()["revenue"]
+            total_revenue = float(res_rev) if res_rev is not None else 0.0
+
+            # 5. Category Breakdown
+            cursor.execute("""
+                SELECT category_name, COUNT(*) as cat_count
+                FROM books
+                GROUP BY category_name
+                ORDER BY cat_count DESC
+                LIMIT 4
+            """)
+            cat_rows = cursor.fetchall()
+            category_shares = []
+            if total_books > 0:
+                for cat in cat_rows:
+                    percentage = round((cat["cat_count"] / total_books) * 100)
+                    category_shares.append({
+                        "name": cat["category_name"] or "General",
+                        "count": cat["cat_count"],
+                        "percentage": percentage
+                    })
+
+        return jsonify({
+            "success": True,
+            "total_books": total_books,
+            "total_orders": total_orders,
+            "total_users": total_users,
+            "total_revenue": f"{total_revenue:,.2f}",
+            "raw_revenue": total_revenue,
+            "category_shares": category_shares
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/admin/notifications")
+def api_admin_notifications():
+    if "user" not in session or session.get("user") != "Admin":
+        return jsonify({"error": "Unauthorized"}), 403
+
+    notifications = []
+    try:
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            # 1. Pending Books requiring approval
+            cursor.execute("""
+                SELECT b.id, b.title, u.name as seller_name, b.created_at
+                FROM books b
+                LEFT JOIN users u ON b.seller_id = u.id
+                WHERE b.approved = FALSE OR b.approved IS NULL
+                ORDER BY b.id DESC
+                LIMIT 3
+            """)
+            pending = cursor.fetchall()
+            for p in pending:
+                t_str = p["created_at"].strftime("%b %d, %I:%M %p") if p.get("created_at") else "Recently"
+                notifications.append({
+                    "id": f"pending-book-{p['id']}",
+                    "title": "Pending Book Approval",
+                    "message": f"'{p['title']}' submitted by {p['seller_name'] or 'Seller'}",
+                    "time": t_str,
+                    "link": url_for("admin_books"),
+                    "icon": "bi-journal-bookmark-fill",
+                    "badge_class": "badge-warning-custom",
+                    "type": "warning"
+                })
+
+            # 2. Recent Orders
+            cursor.execute("""
+                SELECT id, order_number, total_amount, created_at
+                FROM orders
+                ORDER BY created_at DESC, id DESC
+                LIMIT 3
+            """)
+            recent_orders = cursor.fetchall()
+            for o in recent_orders:
+                t_str = o["created_at"].strftime("%b %d, %I:%M %p") if o.get("created_at") else "Recently"
+                notifications.append({
+                    "id": f"order-{o['id']}",
+                    "title": "New Order Placed",
+                    "message": f"Order #{o['order_number']} for ₹{float(o['total_amount']):.2f}",
+                    "time": t_str,
+                    "link": url_for("admin_orders"),
+                    "icon": "bi-bag-check-fill",
+                    "badge_class": "badge-success-custom",
+                    "type": "success"
+                })
+
+            # 3. New User Signups
+            cursor.execute("""
+                SELECT id, name, created_at
+                FROM users
+                WHERE role = 'User'
+                ORDER BY created_at DESC, id DESC
+                LIMIT 2
+            """)
+            recent_users = cursor.fetchall()
+            for u in recent_users:
+                t_str = u["created_at"].strftime("%b %d, %I:%M %p") if u.get("created_at") else "Recently"
+                notifications.append({
+                    "id": f"user-{u['id']}",
+                    "title": "New User Registered",
+                    "message": f"{u['name']} joined BookBazar",
+                    "time": t_str,
+                    "link": url_for("admin_users"),
+                    "icon": "bi-person-plus-fill",
+                    "badge_class": "badge-info-custom",
+                    "type": "info"
+                })
+
+        return jsonify({
+            "success": True,
+            "count": len(notifications),
+            "notifications": notifications
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/admin/orders")

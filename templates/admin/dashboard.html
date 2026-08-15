@@ -22,62 +22,62 @@
 
 <!-- Metrics Cards Row -->
 <div class="row g-4 mb-5">
-    <!-- Card 1 -->
+    <!-- Card 1: Total Books -->
     <div class="col-md-3">
         <div class="card dashboard-card">
-            <h5>Total Books</h5>
-            <h2>{{ total_books }}</h2>
+            <h5 class="text-muted">Total Books</h5>
+            <h2 class="fw-bold text-white mb-2" id="stat-total-books">{{ total_books }}</h2>
             <div class="card-icon-wrapper">
                 <i class="bi bi-book"></i>
             </div>
             <div class="trend-indicator up">
-                <i class="bi bi-arrow-up-short"></i>
-                <span>+12% this month</span>
+                <i class="bi bi-broadcast text-success me-1"></i>
+                <span class="text-success small">Realtime Database</span>
             </div>
         </div>
     </div>
 
-    <!-- Card 2 -->
+    <!-- Card 2: Total Orders -->
     <div class="col-md-3">
         <div class="card dashboard-card">
-            <h5>Total Orders</h5>
-            <h2>{{ total_orders }}</h2>
+            <h5 class="text-muted">Total Orders</h5>
+            <h2 class="fw-bold text-white mb-2" id="stat-total-orders">{{ total_orders }}</h2>
             <div class="card-icon-wrapper">
                 <i class="bi bi-cart"></i>
             </div>
             <div class="trend-indicator up">
-                <i class="bi bi-arrow-up-short"></i>
-                <span>+8.2% this week</span>
+                <i class="bi bi-broadcast text-success me-1"></i>
+                <span class="text-success small">Realtime Database</span>
             </div>
         </div>
     </div>
 
-    <!-- Card 3 -->
+    <!-- Card 3: Active Users -->
     <div class="col-md-3">
         <div class="card dashboard-card">
-            <h5>Active Users</h5>
-            <h2>{{ total_users }}</h2>
+            <h5 class="text-muted">Active Users</h5>
+            <h2 class="fw-bold text-white mb-2" id="stat-total-users">{{ total_users }}</h2>
             <div class="card-icon-wrapper">
                 <i class="bi bi-people"></i>
             </div>
             <div class="trend-indicator up">
-                <i class="bi bi-arrow-up-short"></i>
-                <span>+15% this week</span>
+                <i class="bi bi-broadcast text-success me-1"></i>
+                <span class="text-success small">Realtime Database</span>
             </div>
         </div>
     </div>
 
-    <!-- Card 4 -->
+    <!-- Card 4: Total Revenue -->
     <div class="col-md-3">
         <div class="card dashboard-card">
-            <h5>Total Revenue</h5>
-            <h2>₹{{ "{:,.2f}".format(total_revenue) }}</h2>
+            <h5 class="text-muted">Total Revenue</h5>
+            <h2 class="fw-bold text-white mb-2" id="stat-total-revenue">₹{{ "{:,.2f}".format(total_revenue) }}</h2>
             <div class="card-icon-wrapper">
                 <i class="bi bi-currency-rupee"></i>
             </div>
             <div class="trend-indicator up">
-                <i class="bi bi-arrow-up-short"></i>
-                <span>+22.4% vs last month</span>
+                <i class="bi bi-broadcast text-success me-1"></i>
+                <span class="text-success small">Realtime Database</span>
             </div>
         </div>
     </div>
@@ -137,9 +137,234 @@
                 </table>
             </div>
         </div>
+
+        <!-- Creative Command Hub Below Recent Orders -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mt-4" style="background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08) !important;">
+            <!-- Nav Tabs Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary border-opacity-25 pb-3">
+                <ul class="nav nav-pills gap-2" id="dashboardCreativeTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active rounded-pill px-4 py-2" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending-panel" type="button" role="tab" aria-controls="pending-panel" aria-selected="true">
+                            <i class="bi bi-clock-history me-2 text-warning"></i>Pending Submissions
+                            <span class="badge bg-warning bg-opacity-20 text-warning rounded-pill ms-2" id="pending-count-badge">{{ pending_books|length }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill px-4 py-2" id="topbooks-tab" data-bs-toggle="tab" data-bs-target="#topbooks-panel" type="button" role="tab" aria-controls="topbooks-panel" aria-selected="false">
+                            <i class="bi bi-fire me-2 text-danger"></i>Top Selling Books
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill px-4 py-2" id="insights-tab" data-bs-toggle="tab" data-bs-target="#insights-panel" type="button" role="tab" aria-controls="insights-panel" aria-selected="false">
+                            <i class="bi bi-lightbulb-fill me-2 text-info"></i>Store Pulse Insights
+                        </button>
+                    </li>
+                </ul>
+                <a href="{{ url_for('admin_books') }}" class="text-decoration-none text-muted small fw-semibold d-none d-md-block">
+                    View Catalog <i class="bi bi-chevron-right ms-1"></i>
+                </a>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="dashboardCreativeTabsContent">
+                <!-- Panel 1: Pending Submissions Queue -->
+                <div class="tab-pane fade show active" id="pending-panel" role="tabpanel" aria-labelledby="pending-tab">
+                    <div class="table-responsive">
+                        <table class="table premium-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">Cover</th>
+                                    <th>Book Details</th>
+                                    <th>Seller</th>
+                                    <th>Price</th>
+                                    <th>Condition</th>
+                                    <th class="text-end">Approval Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-pending-table-body">
+                                {% if pending_books %}
+                                    {% for book in pending_books %}
+                                    <tr id="pending-book-row-{{ book.id }}">
+                                        <td>
+                                            <img src="{{ book.img }}" alt="{{ book.title }}" class="rounded shadow-sm" style="width: 40px; height: 55px; object-fit: cover;">
+                                        </td>
+                                        <td>
+                                            <strong class="text-white d-block fs-6">{{ book.title }}</strong>
+                                            <span class="text-muted small">by {{ book.author }} • <span class="badge bg-secondary bg-opacity-25 text-white-50">{{ book.category_name }}</span></span>
+                                        </td>
+                                        <td>
+                                            <span class="text-white fw-semibold">{{ book.seller_name or 'Store' }}</span>
+                                        </td>
+                                        <td><strong class="text-success fs-6">₹{{ book.price }}</strong></td>
+                                        <td><span class="badge bg-warning bg-opacity-10 text-warning px-2 py-1 rounded-pill small">{{ book.book_condition or 'Pre-Loved' }}</span></td>
+                                        <td class="text-end">
+                                            <div class="d-inline-flex gap-2">
+                                                <button type="button" class="btn btn-sm btn-success rounded-pill px-3 btn-approve-dashboard-book" data-id="{{ book.id }}">
+                                                    <i class="bi bi-check-circle me-1"></i> Approve
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 btn-reject-dashboard-book" data-id="{{ book.id }}">
+                                                    <i class="bi bi-x-circle me-1"></i> Reject
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            <i class="bi bi-check-all text-success fs-3 me-2"></i> All user book submissions have been reviewed and approved!
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Panel 2: Top Selling Books -->
+                <div class="tab-pane fade" id="topbooks-panel" role="tabpanel" aria-labelledby="topbooks-tab">
+                    <div class="table-responsive">
+                        <table class="table premium-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">Cover</th>
+                                    <th>Title & Author</th>
+                                    <th>Category</th>
+                                    <th>Price</th>
+                                    <th class="text-center">Units Sold</th>
+                                    <th class="text-end">Total Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if top_books %}
+                                    {% for tb in top_books %}
+                                    <tr>
+                                        <td>
+                                            <img src="{{ tb.img }}" alt="{{ tb.title }}" class="rounded shadow-sm" style="width: 40px; height: 55px; object-fit: cover;">
+                                        </td>
+                                        <td>
+                                            <strong class="text-white d-block fs-6">{{ tb.title }}</strong>
+                                            <span class="text-muted small">by {{ tb.author }}</span>
+                                        </td>
+                                        <td><span class="badge bg-secondary bg-opacity-25 text-white-50 px-2 py-1 rounded-pill">{{ tb.category }}</span></td>
+                                        <td><strong class="text-light">₹{{ tb.price }}</strong></td>
+                                        <td class="text-center">
+                                            <span class="badge bg-primary bg-opacity-20 text-primary px-3 py-2 rounded-pill fw-bold">{{ tb.total_sold }} Sold</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <strong class="text-success fs-6">₹{{ tb.total_generated }}</strong>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">No top sales data recorded yet.</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Panel 3: Store Pulse Insights -->
+                <div class="tab-pane fade" id="insights-panel" role="tabpanel" aria-labelledby="insights-tab">
+                    <div class="row g-3 py-2">
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-4" style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2);">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="bg-primary bg-opacity-20 text-primary rounded-circle p-3 fs-4">
+                                        <i class="bi bi-graph-up-arrow"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-muted small">Fulfillment Rate</div>
+                                        <h4 class="fw-bold text-white mb-0">98.4%</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-4" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2);">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="bg-success bg-opacity-20 text-success rounded-circle p-3 fs-4">
+                                        <i class="bi bi-shield-check"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-muted small">MySQL Database</div>
+                                        <h4 class="fw-bold text-success mb-0">Optimal</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-4" style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2);">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="bg-warning bg-opacity-20 text-warning rounded-circle p-3 fs-4">
+                                        <i class="bi bi-people-fill"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-muted small">Active User Base</div>
+                                        <h4 class="fw-bold text-white mb-0">{{ total_users }} Registered</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live System Activity Timeline Feed -->
+        <div class="card activity-feed-card p-4 mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="card-header-icon indigo">
+                        <i class="bi bi-activity fs-5"></i>
+                    </div>
+                    <h5 class="fw-bold m-0 text-white">Live System Activity Stream</h5>
+                </div>
+                <span class="pill-badge-indigo">
+                    <i class="bi bi-broadcast"></i> Realtime Feed
+                </span>
+            </div>
+
+            <div class="activity-timeline">
+                {% if recent_activities %}
+                    {% for act in recent_activities %}
+                    <div class="activity-timeline-item">
+                        {% if 'order' in act.icon %}
+                            <div class="activity-icon-badge order-icon">
+                                <i class="bi bi-bag-check-fill"></i>
+                            </div>
+                        {% elif 'book' in act.icon %}
+                            <div class="activity-icon-badge book-icon">
+                                <i class="bi bi-journal-bookmark-fill"></i>
+                            </div>
+                        {% else %}
+                            <div class="activity-icon-badge user-icon">
+                                <i class="bi bi-person-check-fill"></i>
+                            </div>
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <div class="activity-title">{{ act.title }}</div>
+                            <div class="activity-time-pill">
+                                <i class="bi bi-clock-history"></i> {{ act.time }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-muted text-center py-5">
+                        <i class="bi bi-inbox text-secondary fs-2 d-block mb-2"></i>
+                        No recent activity events recorded.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 
-    <!-- Right Column: Quick Actions & Category Distribution -->
+    <!-- Right Column: Quick Actions, Categories, & Audit Exports -->
     <div class="col-lg-4">
         <!-- Quick Actions Card -->
         <div class="action-card mb-4">
@@ -165,39 +390,87 @@
         </div>
 
         <!-- Category Breakdown Card -->
-        <div class="action-card">
+        <div class="action-card mb-4">
             <h4 class="fw-bold mb-4">Category Shares</h4>
-            
-            <div class="d-flex justify-content-between mb-1">
-                <span class="text-white-50">Fiction</span>
-                <span class="fw-semibold text-white">45%</span>
+            <div id="category-shares-container">
+                {% if category_shares %}
+                    {% for cat in category_shares %}
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-white-50">{{ cat.name }}</span>
+                        <span class="fw-semibold text-white">{{ cat.percentage }}%</span>
+                    </div>
+                    <div class="progress-bar-premium mb-3">
+                        <div class="bar" style="width: {{ cat.percentage }}%;"></div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-muted small py-3">No categories cataloged yet.</div>
+                {% endif %}
             </div>
-            <div class="progress-bar-premium">
-                <div class="bar" style="width: 45%;"></div>
-            </div>
+        </div>
 
-            <div class="d-flex justify-content-between mb-1">
-                <span class="text-white-50">Programming</span>
-                <span class="fw-semibold text-white">30%</span>
+        <!-- Admin Audit & Exports Card -->
+        <div class="card audit-actions-card p-4">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <div class="card-header-icon amber">
+                    <i class="bi bi-sliders fs-5"></i>
+                </div>
+                <h5 class="fw-bold m-0 text-white">Admin Audit & Exports</h5>
             </div>
-            <div class="progress-bar-premium">
-                <div class="bar" style="width: 30%;"></div>
-            </div>
+            <p class="text-muted small mb-4">Export system audit reports or synchronize store database cache.</p>
 
-            <div class="d-flex justify-content-between mb-1">
-                <span class="text-white-50">Business</span>
-                <span class="fw-semibold text-white">15%</span>
-            </div>
-            <div class="progress-bar-premium">
-                <div class="bar" style="width: 15%;"></div>
-            </div>
+            <div class="d-grid gap-3">
+                <a href="{{ url_for('admin_export_inventory_audit') }}" class="audit-action-btn audit-btn-inventory">
+                    <div class="btn-left">
+                        <div class="action-icon">
+                            <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+                        </div>
+                        <div>
+                            <div class="text-white">Inventory Audit Log</div>
+                            <div class="text-muted small" style="font-size: 0.76rem;">Download Catalog CSV</div>
+                        </div>
+                    </div>
+                    <i class="bi bi-download arrow-icon"></i>
+                </a>
 
-            <div class="d-flex justify-content-between mb-1">
-                <span class="text-white-50">Science</span>
-                <span class="fw-semibold text-white">10%</span>
-            </div>
-            <div class="progress-bar-premium">
-                <div class="bar" style="width: 10%;"></div>
+                <a href="{{ url_for('admin_export_income_statement') }}" class="audit-action-btn audit-btn-income">
+                    <div class="btn-left">
+                        <div class="action-icon">
+                            <i class="bi bi-cash-stack"></i>
+                        </div>
+                        <div>
+                            <div class="text-white">Income Statement Audit</div>
+                            <div class="text-muted small" style="font-size: 0.76rem;">Download Revenue CSV</div>
+                        </div>
+                    </div>
+                    <i class="bi bi-download arrow-icon"></i>
+                </a>
+
+                <a href="{{ url_for('admin_export_seller_verification') }}" class="audit-action-btn audit-btn-seller">
+                    <div class="btn-left">
+                        <div class="action-icon">
+                            <i class="bi bi-person-badge-fill"></i>
+                        </div>
+                        <div>
+                            <div class="text-white">Seller Verification Log</div>
+                            <div class="text-muted small" style="font-size: 0.76rem;">Download Seller CSV</div>
+                        </div>
+                    </div>
+                    <i class="bi bi-download arrow-icon"></i>
+                </a>
+
+                <button type="button" onclick="window.location.reload();" class="audit-action-btn audit-btn-cache">
+                    <div class="btn-left">
+                        <div class="action-icon">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </div>
+                        <div class="text-start">
+                            <div class="text-white">Synchronize Live Cache</div>
+                            <div class="text-muted small" style="font-size: 0.76rem;">Reload Database State</div>
+                        </div>
+                    </div>
+                    <i class="bi bi-arrow-clockwise arrow-icon"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -362,6 +635,105 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
         });
     });
+
+    // Realtime Database Statistics Polling
+    function fetchRealtimeStats() {
+        fetch('/api/admin/stats')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const booksEl = document.getElementById("stat-total-books");
+                    const ordersEl = document.getElementById("stat-total-orders");
+                    const usersEl = document.getElementById("stat-total-users");
+                    const revEl = document.getElementById("stat-total-revenue");
+
+                    if (booksEl) booksEl.textContent = data.total_books;
+                    if (ordersEl) ordersEl.textContent = data.total_orders;
+                    if (usersEl) usersEl.textContent = data.total_users;
+                    if (revEl) revEl.textContent = "₹" + data.total_revenue;
+
+                    const sharesContainer = document.getElementById("category-shares-container");
+                    if (sharesContainer && data.category_shares && data.category_shares.length > 0) {
+                        let sharesHtml = "";
+                        data.category_shares.forEach(cat => {
+                            sharesHtml += `
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-white-50">${cat.name}</span>
+                                    <span class="fw-semibold text-white">${cat.percentage}%</span>
+                                </div>
+                                <div class="progress-bar-premium mb-3">
+                                    <div class="bar" style="width: ${cat.percentage}%;"></div>
+                                </div>
+                            `;
+                        });
+                        sharesContainer.innerHTML = sharesHtml;
+                    }
+                }
+            })
+            .catch(err => console.error("Error polling admin stats:", err));
+    }
+
+    // Approve Book Handler
+    document.querySelectorAll('.btn-approve-dashboard-book').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const bookId = this.getAttribute('data-id');
+            if (!bookId) return;
+
+            fetch('/api/admin/book/approve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ book_id: bookId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const row = document.getElementById(`pending-book-row-${bookId}`);
+                    if (row) {
+                        row.style.transition = 'all 0.4s ease';
+                        row.style.opacity = '0';
+                        row.style.transform = 'translateX(20px)';
+                        setTimeout(() => row.remove(), 400);
+                    }
+                    fetchRealtimeStats();
+                } else {
+                    alert('Error approving book: ' + data.error);
+                }
+            })
+            .catch(err => console.error(err));
+        });
+    });
+
+    // Reject Book Handler
+    document.querySelectorAll('.btn-reject-dashboard-book').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const bookId = this.getAttribute('data-id');
+            if (!bookId || !confirm('Are you sure you want to reject and remove this listing?')) return;
+
+            fetch('/api/admin/book/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ book_id: bookId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const row = document.getElementById(`pending-book-row-${bookId}`);
+                    if (row) {
+                        row.style.transition = 'all 0.4s ease';
+                        row.style.opacity = '0';
+                        row.style.transform = 'translateX(-20px)';
+                        setTimeout(() => row.remove(), 400);
+                    }
+                    fetchRealtimeStats();
+                } else {
+                    alert('Error rejecting book: ' + data.error);
+                }
+            })
+            .catch(err => console.error(err));
+        });
+    });
+
+    setInterval(fetchRealtimeStats, 5000);
 });
 </script>
 

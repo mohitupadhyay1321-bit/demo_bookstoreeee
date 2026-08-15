@@ -59,6 +59,80 @@
     window.isUserLoggedIn = {{ 'true' if session.get('user') else 'false' }};
 </script>
 <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const countBadge = document.getElementById("adminNotificationCountBadge");
+    const dropdownCount = document.getElementById("notificationDropdownCount");
+    const listBody = document.getElementById("notificationListBody");
+    const clearBtn = document.getElementById("btnClearNotifications");
+
+    function fetchAdminNotifications() {
+        fetch('/api/admin/notifications')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) return;
+                
+                const isCleared = sessionStorage.getItem('admin_notifications_read') === 'true';
+                const count = data.count || 0;
+
+                if (countBadge) {
+                    if (count > 0 && !isCleared) {
+                        countBadge.textContent = count;
+                        countBadge.style.display = "inline-block";
+                    } else {
+                        countBadge.style.display = "none";
+                    }
+                }
+
+                if (dropdownCount) {
+                    dropdownCount.textContent = (count > 0 && !isCleared) ? `${count} New` : `0 New`;
+                }
+
+                if (listBody) {
+                    if (data.notifications && data.notifications.length > 0) {
+                        let html = '';
+                        data.notifications.forEach(item => {
+                            html += `
+                                <a href="${item.link}" class="notification-item">
+                                    <div class="notification-icon-wrap ${item.badge_class}">
+                                        <i class="bi ${item.icon}"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="notification-text-title">${item.title}</div>
+                                        <div class="notification-text-desc">${item.message}</div>
+                                        <div class="notification-text-time"><i class="bi bi-clock me-1"></i>${item.time}</div>
+                                    </div>
+                                </a>
+                            `;
+                        });
+                        listBody.innerHTML = html;
+                    } else {
+                        listBody.innerHTML = `
+                            <div class="text-center py-4 text-muted">
+                                <i class="bi bi-bell-slash fs-3 d-block mb-1"></i>
+                                <span class="small">No new notifications</span>
+                            </div>
+                        `;
+                    }
+                }
+            })
+            .catch(err => console.error("Error fetching notifications:", err));
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener("click", function (e) {
+            e.preventDefault();
+            sessionStorage.setItem('admin_notifications_read', 'true');
+            if (countBadge) countBadge.style.display = "none";
+            if (dropdownCount) dropdownCount.textContent = "0 New";
+        });
+    }
+
+    // Initial load and periodic refresh every 10s
+    fetchAdminNotifications();
+    setInterval(fetchAdminNotifications, 10000);
+});
+</script>
 {% block extra_js %}
 {% endblock %}
 </body>

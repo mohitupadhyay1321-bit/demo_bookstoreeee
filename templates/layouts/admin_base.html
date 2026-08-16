@@ -72,12 +72,11 @@ document.addEventListener("DOMContentLoaded", function () {
             .then(data => {
                 if (!data.success) return;
                 
-                const isCleared = sessionStorage.getItem('admin_notifications_read') === 'true';
-                const count = data.count || 0;
+                const unreadCount = data.unread_count || 0;
 
                 if (countBadge) {
-                    if (count > 0 && !isCleared) {
-                        countBadge.textContent = count;
+                    if (unreadCount > 0) {
+                        countBadge.textContent = unreadCount;
                         countBadge.style.display = "inline-block";
                     } else {
                         countBadge.style.display = "none";
@@ -85,20 +84,26 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 if (dropdownCount) {
-                    dropdownCount.textContent = (count > 0 && !isCleared) ? `${count} New` : `0 New`;
+                    dropdownCount.textContent = unreadCount > 0 ? `${unreadCount} New` : `0 New`;
+                    dropdownCount.className = unreadCount > 0 ? "badge badge-notif-count rounded-pill" : "badge badge-notif-empty rounded-pill";
                 }
 
                 if (listBody) {
                     if (data.notifications && data.notifications.length > 0) {
                         let html = '';
                         data.notifications.forEach(item => {
+                            const unreadClass = item.is_unread ? 'unread' : '';
+                            const unreadDot = item.is_unread ? '<span class="badge bg-primary rounded-circle p-1 ms-1" style="width: 7px; height: 7px; display: inline-block;"></span>' : '';
                             html += `
-                                <a href="${item.link}" class="notification-item">
+                                <a href="${item.link}" class="notification-item ${unreadClass}">
                                     <div class="notification-icon-wrap ${item.badge_class}">
                                         <i class="bi ${item.icon}"></i>
                                     </div>
                                     <div class="flex-grow-1">
-                                        <div class="notification-text-title">${item.title}</div>
+                                        <div class="notification-text-title d-flex align-items-center justify-content-between">
+                                            <span>${item.title}</span>
+                                            ${unreadDot}
+                                        </div>
                                         <div class="notification-text-desc">${item.message}</div>
                                         <div class="notification-text-time"><i class="bi bi-clock me-1"></i>${item.time}</div>
                                     </div>
@@ -110,7 +115,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         listBody.innerHTML = `
                             <div class="text-center py-4 text-muted">
                                 <i class="bi bi-bell-slash fs-3 d-block mb-1"></i>
-                                <span class="small">No new notifications</span>
+                                <span class="small">No notifications found</span>
                             </div>
                         `;
                     }
@@ -119,12 +124,30 @@ document.addEventListener("DOMContentLoaded", function () {
             .catch(err => console.error("Error fetching notifications:", err));
     }
 
+    function markAllAsRead() {
+        fetch('/api/admin/notifications/mark-read', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (countBadge) countBadge.style.display = "none";
+                if (dropdownCount) {
+                    dropdownCount.textContent = "0 New";
+                    dropdownCount.className = "badge bg-secondary bg-opacity-25 text-white-50 rounded-pill small";
+                }
+                document.querySelectorAll(".notification-item.unread").forEach(el => el.classList.remove("unread"));
+                document.querySelectorAll(".notification-item .badge.bg-primary.rounded-circle").forEach(el => el.remove());
+            }
+        })
+        .catch(err => console.error("Error marking notifications as read:", err));
+    }
+
     if (clearBtn) {
         clearBtn.addEventListener("click", function (e) {
             e.preventDefault();
-            sessionStorage.setItem('admin_notifications_read', 'true');
-            if (countBadge) countBadge.style.display = "none";
-            if (dropdownCount) dropdownCount.textContent = "0 New";
+            markAllAsRead();
         });
     }
 

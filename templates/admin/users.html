@@ -29,11 +29,11 @@ Manage Users | Admin
                     <td><strong>{{ u.name }}</strong></td>
                     <td>{{ u.email }}</td>
                     <td>
-                        <span class="badge {% if u.role == 'Admin' %}bg-purple bg-opacity-25 text-purple{% else %}bg-primary bg-opacity-10 text-primary{% endif %} px-3 py-2 rounded-pill">
+                        <span class="badge {% if u.role == 'Admin' %}badge-status-processing{% else %}badge-notif-count{% endif %} rounded-pill">
                             {{ u.role or 'User' }}
                         </span>
                     </td>
-                    <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Active</span></td>
+                    <td><span class="badge badge-status-delivered rounded-pill">Active</span></td>
                     <td>
                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 me-1 btn-view-user" data-user-id="{{ u.id }}">
                             <i class="bi bi-eye me-1"></i> View Details
@@ -60,7 +60,7 @@ Manage Users | Admin
                     <div>
                         <div class="d-flex align-items-center gap-2">
                             <h5 class="modal-title fw-bold m-0 text-white" id="userModalName"></h5>
-                            <span id="userModalRoleBadge" class="badge bg-primary bg-opacity-20 text-primary rounded-pill"></span>
+                            <span id="userModalRoleBadge" class="badge badge-notif-count rounded-pill"></span>
                         </div>
                         <div class="text-muted small" id="userModalFormattedId"></div>
                     </div>

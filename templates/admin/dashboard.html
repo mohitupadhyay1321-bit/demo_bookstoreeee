@@ -97,18 +97,20 @@
                             <td>₹{{ order.total_amount }}</td>
                             <td>
                                 {% if order.status == 'Delivered' or order.status == 'Completed' %}
-                                    <span class="status-badge completed">Completed</span>
-                                {% elif order.status == 'Processing' %}
-                                    <span class="status-badge processing">Processing</span>
+                                    <span class="status-badge completed order-status-badge-{{ order.id }}">Delivered</span>
                                 {% elif order.status == 'Shipped' %}
-                                    <span class="status-badge processing">Shipped</span>
+                                    <span class="status-badge processing order-status-badge-{{ order.id }}">Shipped</span>
+                                {% elif order.status == 'Processing' %}
+                                    <span class="status-badge processing order-status-badge-{{ order.id }}">Processing</span>
+                                {% elif order.status == 'Cancelled' %}
+                                    <span class="status-badge pending order-status-badge-{{ order.id }}">Cancelled</span>
                                 {% else %}
-                                    <span class="status-badge pending">Pending</span>
+                                    <span class="status-badge pending order-status-badge-{{ order.id }}">{{ order.status }}</span>
                                 {% endif %}
                             </td>
                             <td>
                                 <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 btn-view-order" data-order-id="{{ order.id }}">
-                                    <i class="bi bi-eye me-1"></i> View Details
+                                    <i class="bi bi-eye me-1"></i> View / Update
                                 </button>
                             </td>
                         </tr>
@@ -233,7 +235,7 @@
                                         <td><span class="badge bg-secondary bg-opacity-25 text-white-50 px-2 py-1 rounded-pill">{{ tb.category }}</span></td>
                                         <td><strong class="text-light">₹{{ tb.price }}</strong></td>
                                         <td class="text-center">
-                                            <span class="badge bg-primary bg-opacity-20 text-primary px-3 py-2 rounded-pill fw-bold">{{ tb.total_sold }} Sold</span>
+                                            <span class="badge badge-notif-count rounded-pill">{{ tb.total_sold }} Sold</span>
                                         </td>
                                         <td class="text-end">
                                             <strong class="text-success fs-6">₹{{ tb.total_generated }}</strong>
@@ -256,7 +258,7 @@
                         <div class="col-md-4">
                             <div class="p-3 rounded-4" style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2);">
                                 <div class="d-flex align-items-center gap-3">
-                                    <div class="bg-primary bg-opacity-20 text-primary rounded-circle p-3 fs-4">
+                                    <div class="card-header-icon indigo" style="width: 48px; height: 48px; font-size: 1.25rem;">
                                         <i class="bi bi-graph-up-arrow"></i>
                                     </div>
                                     <div>
@@ -531,7 +533,21 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <label class="text-white-50 small fw-semibold">Status:</label>
+                    <select class="form-select form-select-sm bg-dark text-white border-secondary rounded-pill px-3 py-1" id="modalOrderStatusSelect" style="width: 140px;">
+                        <option value="Pending">Pending</option>
+                        <option value="Processing">Processing</option>
+                        <option value="Shipped">Shipped</option>
+                        <option value="Delivered">Delivered</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1" id="btnUpdateModalStatus">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Update Status
+                    </button>
+                    <span id="modalStatusUpdateMsg" class="small text-success ms-2 d-none fw-bold"><i class="bi bi-check-circle me-1"></i>Updated!</span>
+                </div>
                 <button type="button" class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -548,11 +564,24 @@ document.addEventListener("DOMContentLoaded", function () {
         bsModal = new bootstrap.Modal(modalElement);
     }
 
+    function renderModalBadge(badgeEl, status) {
+        badgeEl.textContent = status;
+        badgeEl.className = "status-badge ";
+        if (status === "Delivered" || status === "Completed") {
+            badgeEl.classList.add("completed");
+        } else if (status === "Processing" || status === "Shipped") {
+            badgeEl.classList.add("processing");
+        } else {
+            badgeEl.classList.add("pending");
+        }
+    }
+
     detailButtons.forEach(btn => {
         btn.addEventListener("click", function () {
             const orderId = this.getAttribute("data-order-id");
             if (!orderId || !bsModal) return;
 
+            modalElement.setAttribute("data-current-order-id", orderId);
             document.getElementById("modalLoadingSpinner").classList.remove("d-none");
             document.getElementById("modalMainContent").classList.add("d-none");
             bsModal.show();
@@ -564,16 +593,13 @@ document.addEventListener("DOMContentLoaded", function () {
                         const o = data.order;
                         document.getElementById("modalOrderNumber").textContent = o.order_number;
                         
-                        // Status badge
+                        // Status badge & select
                         const badge = document.getElementById("modalOrderStatusBadge");
-                        badge.textContent = o.status;
-                        badge.className = "status-badge ";
-                        if (o.status === "Delivered" || o.status === "Completed") {
-                            badge.classList.add("completed");
-                        } else if (o.status === "Processing" || o.status === "Shipped") {
-                            badge.classList.add("processing");
-                        } else {
-                            badge.classList.add("pending");
+                        renderModalBadge(badge, o.status);
+
+                        const statusSelect = document.getElementById("modalOrderStatusSelect");
+                        if (statusSelect) {
+                            statusSelect.value = o.status;
                         }
 
                         document.getElementById("modalCustomerName").textContent = o.customer_name;
@@ -589,7 +615,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         tbody.innerHTML = "";
                         o.items.forEach(item => {
                             const tr = document.createElement("tr");
-                            const imgHtml = item.img ? `<img src="${item.img}" class="order-item-img me-3" alt="${item.title}">` : '';
+                            const imgHtml = item.img ? `<img src="${item.img}" class="order-item-img me-3 rounded" style="width: 44px; height: 56px; object-fit: cover;" alt="${item.title}">` : '';
                             tr.innerHTML = `
                                 <td>
                                     <div class="d-flex align-items-center">
@@ -619,6 +645,52 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
         });
     });
+
+    // Handle Status Update Button in Dashboard
+    const btnUpdate = document.getElementById("btnUpdateModalStatus");
+    if (btnUpdate) {
+        btnUpdate.addEventListener("click", function() {
+            const orderId = modalElement.getAttribute("data-current-order-id");
+            const statusSelect = document.getElementById("modalOrderStatusSelect");
+            const newStatus = statusSelect.value;
+            const msgEl = document.getElementById("modalStatusUpdateMsg");
+
+            btnUpdate.disabled = true;
+            btnUpdate.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Updating...`;
+
+            fetch("/api/admin/order/update-status", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ order_id: orderId, status: newStatus })
+            })
+            .then(r => r.json())
+            .then(data => {
+                btnUpdate.disabled = false;
+                btnUpdate.innerHTML = `<i class="bi bi-arrow-clockwise me-1"></i> Update Status`;
+                if (data.success) {
+                    const badge = document.getElementById("modalOrderStatusBadge");
+                    renderModalBadge(badge, newStatus);
+
+                    const rowBadge = document.querySelector(`.order-status-badge-${orderId}`);
+                    if (rowBadge) {
+                        renderModalBadge(rowBadge, newStatus);
+                    }
+
+                    if (msgEl) {
+                        msgEl.classList.remove("d-none");
+                        setTimeout(() => msgEl.classList.add("d-none"), 3500);
+                    }
+                } else {
+                    alert(data.error || "Failed to update order status");
+                }
+            })
+            .catch(err => {
+                btnUpdate.disabled = false;
+                btnUpdate.innerHTML = `<i class="bi bi-arrow-clockwise me-1"></i> Update Status`;
+                alert("Error updating order status.");
+            });
+        });
+    }
 
     // Realtime Statistics Polling
     function fetchRealtimeStats() {

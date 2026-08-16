@@ -4,13 +4,19 @@
     </div>
     <ul>
         <li>
-            <a href="{{ url_for('profile') }}">
+            <a href="{{ url_for('profile') }}" {% if request.endpoint == 'profile' %}class="active"{% endif %}>
                 <i class="bi bi-speedometer2"></i>
                 Dashboard
             </a>
         </li>
         <li>
-            <a href="{{ url_for('profile_details') }}">
+            <a href="{{ url_for('orders') }}" {% if request.endpoint == 'orders' %}class="active"{% endif %}>
+                <i class="bi bi-bag-check-fill"></i>
+                My Orders
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('profile_details') }}" {% if request.endpoint == 'profile_details' %}class="active"{% endif %}>
                 <i class="bi bi-person-fill"></i>
                 My Profile
             </a>
@@ -22,13 +28,13 @@
             </a>
         </li>
         <li>
-            <a href="{{ url_for('sell_book') }}">
+            <a href="{{ url_for('sell_book') }}" {% if request.endpoint == 'sell_book' %}class="active"{% endif %}>
                 <i class="bi bi-plus-circle"></i>
                 Sell Book
             </a>
         </li>
         <li>
-            <a href="{{ url_for('my_listings') }}">
+            <a href="{{ url_for('my_listings') }}" {% if request.endpoint == 'my_listings' %}class="active"{% endif %}>
                 <i class="bi bi-journal-bookmark-fill"></i>
                 My Listings
             </a>

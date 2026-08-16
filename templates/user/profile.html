@@ -12,17 +12,19 @@
 <!-- Stats Row -->
 <div class="row g-4 mb-4">
     <div class="col-md-3">
-        <div class="card border-0 shadow-sm rounded-4 p-4 h-100" style="background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%); border-left: 5px solid var(--accent) !important;">
-            <div class="d-flex align-items-center gap-3">
-                <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3 fs-3">
-                    <i class="bi bi-bag-check"></i>
-                </div>
-                <div>
-                    <h6 class="text-muted small mb-1">Total Orders</h6>
-                    <h3 class="fw-bold text-white mb-0">{{ total_orders }}</h3>
+        <a href="{{ url_for('orders') }}" class="text-decoration-none">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100" style="background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%); border-left: 5px solid var(--accent) !important; transition: transform 0.2s ease;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3 fs-3">
+                        <i class="bi bi-bag-check"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small mb-1">My Orders</h6>
+                        <h3 class="fw-bold text-white mb-0">{{ total_orders }}</h3>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-md-3">
         <div class="card border-0 shadow-sm rounded-4 p-4 h-100" style="background: linear-gradient(135deg, #1e1b4b 0%, #102e3a 100%); border-left: 5px solid #00D4FF !important;">
@@ -100,7 +102,12 @@
 
         <!-- Recent Orders Card -->
         <div class="card border-0 shadow-sm rounded-4 p-4">
-            <h5 class="fw-bold mb-4 text-white"><i class="bi bi-receipt text-primary me-2"></i>Recent Orders</h5>
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <h5 class="fw-bold m-0 text-white"><i class="bi bi-bag-check-fill text-primary me-2"></i>My Orders & Tracking</h5>
+                <a href="{{ url_for('orders') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1">
+                    <i class="bi bi-box-seam me-1"></i> View All Orders <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
             <div class="table-responsive">
                 <table class="table table-dark table-hover align-middle mb-0">
                     <thead>
@@ -116,11 +123,23 @@
                         {% if user_recent_orders %}
                             {% for order in user_recent_orders %}
                             <tr>
-                                <td>{{ order.order_number }}</td>
-                                <td>{{ order.date }}</td>
+                                <td class="fw-bold text-white">#{{ order.order_number }}</td>
+                                <td class="small text-muted">{{ order.date }}</td>
                                 <td>{{ order.items }}</td>
-                                <td>₹{{ order.total }}</td>
-                                <td><span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">{{ order.status }}</span></td>
+                                <td class="fw-bold text-white">₹{{ order.total }}</td>
+                                <td>
+                                    {% if order.status == 'Delivered' or order.status == 'Completed' %}
+                                        <span class="badge badge-status-delivered rounded-pill"><i class="bi bi-check-circle-fill me-1"></i> Delivered</span>
+                                    {% elif order.status == 'Shipped' %}
+                                        <span class="badge badge-status-shipped rounded-pill"><i class="bi bi-truck me-1"></i> Shipped</span>
+                                    {% elif order.status == 'Processing' %}
+                                        <span class="badge badge-status-processing rounded-pill"><i class="bi bi-arrow-repeat me-1"></i> Processing</span>
+                                    {% elif order.status == 'Cancelled' %}
+                                        <span class="badge badge-status-cancelled rounded-pill"><i class="bi bi-x-circle-fill me-1"></i> Cancelled</span>
+                                    {% else %}
+                                        <span class="badge badge-status-pending rounded-pill"><i class="bi bi-hourglass-split me-1"></i> {{ order.status }}</span>
+                                    {% endif %}
+                                </td>
                             </tr>
                             {% endfor %}
                         {% else %}

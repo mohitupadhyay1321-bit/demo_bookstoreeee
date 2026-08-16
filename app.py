@@ -1,4 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash, make_response
+import csv
+from io import StringIO
 from flask_mysqldb import MySQL
 import MySQLdb
 import MySQLdb.cursors
@@ -53,9 +55,14 @@ def initialize_database():
                     role VARCHAR(50) DEFAULT 'User',
                     shipping_address TEXT DEFAULT NULL,
                     avatar MEDIUMTEXT DEFAULT NULL,
+                    last_notification_read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """)
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN last_notification_read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;")
+            except Exception:
+                pass
 
             # Create Categories Table
             cursor.execute("""
@@ -373,27 +380,7 @@ def check_user_access():
 
     # 2. Restrict logged-in Admin from accessing non-Admin/storefront pages
     if session.get("user") == "Admin":
-        admin_allowed = [
-            "admin_dashboard",
-            "admin_books",
-            "admin_add_book",
-            "admin_edit_book",
-            "admin_categories",
-            "admin_add_category",
-            "admin_edit_category",
-            "admin_delete_category",
-            "admin_orders",
-            "admin_order_details",
-            "admin_users",
-            "admin_user_details",
-            "admin_sellers",
-            "admin_reports",
-            "admin_settings",
-            "logout",
-            "static",
-            "update_avatar_api"
-        ]
-        if endpoint not in admin_allowed and not endpoint.startswith("api_"):
+        if not (endpoint.startswith("admin_") or endpoint.startswith("api_") or endpoint in ["logout", "static", "update_avatar_api"]):
             return redirect(url_for("admin_dashboard"))
 
 # ==========================
@@ -1222,10 +1209,31 @@ def api_admin_notifications():
     if "user" not in session or session.get("user") != "Admin":
         return jsonify({"error": "Unauthorized"}), 403
 
+    admin_id = session.get("user_id")
     notifications = []
+    unread_count = 0
+
     try:
         conn = mysql.connection
         with conn.cursor() as cursor:
+            # Fetch last read timestamp for this admin
+            last_read_at = None
+            if admin_id:
+                cursor.execute("SELECT last_notification_read_at FROM users WHERE id = %s", (admin_id,))
+                admin_row = cursor.fetchone()
+                if admin_row and admin_row.get("last_notification_read_at"):
+                    last_read_at = admin_row["last_notification_read_at"]
+
+            if not last_read_at:
+                cursor.execute("SELECT setting_value FROM store_settings WHERE setting_key = 'last_notification_read_at'")
+                setting_row = cursor.fetchone()
+                if setting_row and setting_row.get("setting_value"):
+                    import datetime
+                    try:
+                        last_read_at = datetime.datetime.fromisoformat(setting_row["setting_value"])
+                    except Exception:
+                        pass
+
             # 1. Pending Books requiring approval
             cursor.execute("""
                 SELECT b.id, b.title, u.name as seller_name, b.created_at
@@ -1233,11 +1241,16 @@ def api_admin_notifications():
                 LEFT JOIN users u ON b.seller_id = u.id
                 WHERE b.approved = FALSE OR b.approved IS NULL
                 ORDER BY b.id DESC
-                LIMIT 3
+                LIMIT 5
             """)
             pending = cursor.fetchall()
             for p in pending:
-                t_str = p["created_at"].strftime("%b %d, %I:%M %p") if p.get("created_at") else "Recently"
+                created_dt = p.get("created_at")
+                is_unread = (last_read_at is None) or (created_dt and created_dt > last_read_at)
+                if is_unread:
+                    unread_count += 1
+
+                t_str = created_dt.strftime("%b %d, %I:%M %p") if created_dt else "Recently"
                 notifications.append({
                     "id": f"pending-book-{p['id']}",
                     "title": "Pending Book Approval",
@@ -1246,7 +1259,8 @@ def api_admin_notifications():
                     "link": url_for("admin_books"),
                     "icon": "bi-journal-bookmark-fill",
                     "badge_class": "badge-warning-custom",
-                    "type": "warning"
+                    "type": "warning",
+                    "is_unread": bool(is_unread)
                 })
 
             # 2. Recent Orders
@@ -1254,11 +1268,16 @@ def api_admin_notifications():
                 SELECT id, order_number, total_amount, created_at
                 FROM orders
                 ORDER BY created_at DESC, id DESC
-                LIMIT 3
+                LIMIT 5
             """)
             recent_orders = cursor.fetchall()
             for o in recent_orders:
-                t_str = o["created_at"].strftime("%b %d, %I:%M %p") if o.get("created_at") else "Recently"
+                created_dt = o.get("created_at")
+                is_unread = (last_read_at is None) or (created_dt and created_dt > last_read_at)
+                if is_unread:
+                    unread_count += 1
+
+                t_str = created_dt.strftime("%b %d, %I:%M %p") if created_dt else "Recently"
                 notifications.append({
                     "id": f"order-{o['id']}",
                     "title": "New Order Placed",
@@ -1267,7 +1286,8 @@ def api_admin_notifications():
                     "link": url_for("admin_orders"),
                     "icon": "bi-bag-check-fill",
                     "badge_class": "badge-success-custom",
-                    "type": "success"
+                    "type": "success",
+                    "is_unread": bool(is_unread)
                 })
 
             # 3. New User Signups
@@ -1276,29 +1296,62 @@ def api_admin_notifications():
                 FROM users
                 WHERE role = 'User'
                 ORDER BY created_at DESC, id DESC
-                LIMIT 2
+                LIMIT 3
             """)
             recent_users = cursor.fetchall()
             for u in recent_users:
-                t_str = u["created_at"].strftime("%b %d, %I:%M %p") if u.get("created_at") else "Recently"
+                created_dt = u.get("created_at")
+                is_unread = (last_read_at is None) or (created_dt and created_dt > last_read_at)
+                if is_unread:
+                    unread_count += 1
+
+                t_str = created_dt.strftime("%b %d, %I:%M %p") if created_dt else "Recently"
                 notifications.append({
                     "id": f"user-{u['id']}",
                     "title": "New User Registered",
-                    "message": f"{u['name']} joined BookBazar",
+                    "message": f"{u['name']} joined the platform",
                     "time": t_str,
                     "link": url_for("admin_users"),
                     "icon": "bi-person-plus-fill",
                     "badge_class": "badge-info-custom",
-                    "type": "info"
+                    "type": "info",
+                    "is_unread": bool(is_unread)
                 })
 
         return jsonify({
             "success": True,
-            "count": len(notifications),
+            "count": unread_count,
+            "unread_count": unread_count,
+            "total_count": len(notifications),
             "notifications": notifications
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/admin/notifications/mark-read", methods=["POST"])
+def api_admin_notifications_mark_read():
+    if session.get("user") != "Admin":
+        return jsonify({"success": False, "error": "Admin required"}), 403
+
+    admin_id = session.get("user_id")
+    try:
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            if admin_id:
+                cursor.execute("UPDATE users SET last_notification_read_at = CURRENT_TIMESTAMP WHERE id = %s", (admin_id,))
+            else:
+                cursor.execute("UPDATE users SET last_notification_read_at = CURRENT_TIMESTAMP WHERE role = 'Admin'")
+            
+            cursor.execute("""
+                INSERT INTO store_settings (setting_key, setting_value)
+                VALUES ('last_notification_read_at', NOW())
+                ON DUPLICATE KEY UPDATE setting_value = NOW()
+            """)
+        conn.commit()
+        return jsonify({"success": True, "unread_count": 0, "message": "All notifications marked as read."})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route("/admin/orders")
@@ -1387,6 +1440,38 @@ def admin_order_details(order_id):
                 "items": items
             }
         return jsonify({"success": True, "order": order_details})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/admin/order/update-status", methods=["POST"])
+def api_admin_order_update_status():
+    if session.get("user") != "Admin":
+        return jsonify({"success": False, "error": "Admin authorization required"}), 403
+
+    data = request.get_json() or {}
+    order_id = data.get("order_id")
+    new_status = (data.get("status") or "").strip()
+
+    valid_statuses = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"]
+    if not order_id or new_status not in valid_statuses:
+        return jsonify({"success": False, "error": f"Invalid order ID or status. Allowed statuses: {', '.join(valid_statuses)}"}), 400
+
+    try:
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            cursor.execute("UPDATE orders SET status = %s WHERE id = %s", (new_status, order_id))
+            cursor.execute("SELECT order_number FROM orders WHERE id = %s", (order_id,))
+            order = cursor.fetchone()
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "order_id": order_id,
+            "order_number": order["order_number"] if order else "",
+            "status": new_status,
+            "message": f"Order #{order['order_number'] if order else order_id} status updated to {new_status}."
+        })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -2328,11 +2413,63 @@ def orders():
     if "user" not in session:
         return redirect(url_for("login"))
         
+    user_id = session.get("user_id")
     order_number = session.pop("last_order_number", None)
     order_payment = session.pop("last_order_payment", None)
     order_total = session.pop("last_order_total", None)
     order_address = session.pop("last_order_address", None)
     has_recent_order = order_number is not None
+
+    user_orders_list = []
+    try:
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT o.id, o.order_number, o.created_at, o.total_amount, o.payment_method, o.shipping_address, o.status
+                FROM orders o
+                WHERE o.user_id = %s
+                ORDER BY o.created_at DESC
+            """, (user_id,))
+            raw_orders = cursor.fetchall()
+            
+            for o in raw_orders:
+                cursor.execute("""
+                    SELECT oi.quantity, oi.price, b.id as book_id, b.title, b.author, b.img, b.category_name
+                    FROM order_items oi
+                    LEFT JOIN books b ON oi.book_id = b.id
+                    WHERE oi.order_id = %s
+                """, (o["id"],))
+                items = cursor.fetchall()
+                
+                o_date = o["created_at"].strftime("%b %d, %Y at %I:%M %p") if o.get("created_at") else "Recent"
+                status_raw = (o["status"] or "Processing").strip()
+                status_lower = status_raw.lower()
+                
+                step = 2 # default processing
+                if "cancel" in status_lower:
+                    step = 0
+                elif "deliver" in status_lower or "complete" in status_lower:
+                    step = 4
+                elif "ship" in status_lower:
+                    step = 3
+                elif "process" in status_lower:
+                    step = 2
+                elif "pend" in status_lower or "place" in status_lower:
+                    step = 1
+
+                user_orders_list.append({
+                    "id": o["id"],
+                    "order_number": o["order_number"],
+                    "date": o_date,
+                    "total": f"{float(o['total_amount']):.2f}",
+                    "payment_method": o["payment_method"] or "COD",
+                    "shipping_address": o["shipping_address"] or "Standard Delivery Address",
+                    "status": status_raw,
+                    "step": step,
+                    "order_items": items
+                })
+    except Exception as e:
+        print(f"Error fetching user orders: {e}")
 
     return render_template(
         "user/orders.html",
@@ -2340,7 +2477,8 @@ def orders():
         order_number=order_number,
         order_payment=order_payment,
         order_total=order_total,
-        order_address=order_address
+        order_address=order_address,
+        user_orders=user_orders_list
     )
 
 

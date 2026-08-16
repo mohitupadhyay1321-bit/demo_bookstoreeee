@@ -1,61 +1,203 @@
-{% extends 'base.html' %}
+{% extends 'layouts/user_base.html' %}
 
-{% block title %}{% if has_recent_order %}Order Confirmed{% else %}My Orders{% endif %} | BookBazar{% endblock %}
+{% block title %}My Orders & Tracking | {{ store_name }}{% endblock %}
 
 {% block content %}
-<div class="container py-5 text-center" style="margin-top: 150px; margin-bottom: 100px;">
-    <div class="row justify-content-center">
-        <div class="col-md-7">
-            <div class="card border-0 shadow rounded-4 p-5" style="background: #111114;">
-                {% if has_recent_order %}
-                <div class="mb-4">
-                    <i class="bi bi-patch-check-fill text-success" style="font-size: 5rem;"></i>
-                </div>
-                <h1 class="fw-bold mb-3 text-white">Order Confirmed!</h1>
-                <p class="text-muted fs-5 mb-4">
-                    Thank you for shopping with BookBazar. Your order has been placed successfully and is currently being processed.
-                </p>
-                
-                <div class="p-4 rounded-4 mb-4 text-start" style="background: #1e1e24;">
-                    <h6 class="fw-bold text-white mb-3"><i class="bi bi-receipt me-2 text-primary"></i>Order Summary</h6>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Order ID:</span>
-                        <strong class="text-white" id="confirmed-order-id">{{ order_number }}</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Payment Method:</span>
-                        <strong class="text-white" id="confirmed-payment-method">{{ order_payment }}</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Delivery Address:</span>
-                        <strong class="text-white text-end" style="max-width: 300px;" id="confirmed-address">{{ order_address }}</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Total Amount:</span>
-                        <strong class="text-white" id="confirmed-total-amount">₹{{ order_total }}</strong>
-                    </div>
-                </div>
-                
-                <div class="d-flex gap-3 justify-content-center">
-                    <a href="{{ url_for('books') }}" class="btn btn-primary rounded-pill px-4 py-2">Continue Shopping</a>
-                    <a href="{{ url_for('profile') }}" class="btn btn-outline-light rounded-pill px-4 py-2">Go to Dashboard</a>
-                </div>
-                {% else %}
-                <div class="mb-4">
-                    <i class="bi bi-bag-check text-muted" style="font-size: 5rem;"></i>
-                </div>
-                <h1 class="fw-bold mb-3 text-white">No Recent Orders</h1>
-                <p class="text-muted fs-5 mb-4">
-                    You haven't placed any recent orders in this session. Explore our catalog to find your next favorite book!
-                </p>
-                
-                <div class="d-flex gap-3 justify-content-center">
-                    <a href="{{ url_for('books') }}" class="btn btn-primary rounded-pill px-4 py-2">Explore Books</a>
-                    <a href="{{ url_for('profile') }}" class="btn btn-outline-light rounded-pill px-4 py-2">Go to Dashboard</a>
-                </div>
-                {% endif %}
-            </div>
+{% if has_recent_order %}
+<!-- Recent Order Confirmation Banner -->
+<div class="card border-0 shadow-lg rounded-4 p-4 p-md-5 mb-4 text-center" style="background: linear-gradient(135deg, rgba(30, 27, 75, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1px solid rgba(99, 102, 241, 0.3) !important;">
+    <div class="mb-3">
+        <i class="bi bi-patch-check-fill text-success" style="font-size: 3.8rem;"></i>
+    </div>
+    <h3 class="fw-bold mb-2 text-white">Order Placed Successfully!</h3>
+    <p class="text-white-50 fs-6 mb-4">
+        Thank you for shopping with {{ store_name }}. Your order is now placed and tracked live below.
+    </p>
+    
+    <div class="p-4 rounded-4 mx-auto text-start shadow-sm" style="background: rgba(15, 23, 42, 0.7); max-width: 550px; border: 1px solid rgba(255, 255, 255, 0.08);">
+        <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted small">Order Reference:</span>
+            <strong class="text-white fw-bold">#{{ order_number }}</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted small">Payment Method:</span>
+            <span class="badge bg-secondary bg-opacity-25 text-white">{{ order_payment }}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted small">Delivery Address:</span>
+            <span class="text-white text-end small" style="max-width: 280px;">{{ order_address }}</span>
+        </div>
+        <div class="d-flex justify-content-between pt-2 border-top border-secondary border-opacity-25 mt-2">
+            <span class="fw-semibold text-white">Total Amount:</span>
+            <strong class="text-success fs-5">₹{{ order_total }}</strong>
         </div>
     </div>
 </div>
+{% endif %}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h2 class="fw-bold text-white m-0"><i class="bi bi-bag-check-fill text-primary me-2"></i>My Orders & Tracking 📦</h2>
+        <p class="text-muted m-0 mt-1">Live status updates and complete fulfillment history for all your book purchases.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('books') }}" class="btn btn-outline-light rounded-pill px-4">
+            <i class="bi bi-book me-1"></i> Browse Catalog
+        </a>
+    </div>
+</div>
+
+<!-- User Orders List -->
+{% if user_orders %}
+    <div class="d-flex flex-column gap-4">
+        {% for order in user_orders %}
+        <div class="card border-0 shadow-sm rounded-4 p-4" style="background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08) !important;">
+            <!-- Order Card Header -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pb-3 border-bottom border-secondary border-opacity-25">
+                <div>
+                    <span class="text-muted small">ORDER ID</span>
+                    <h5 class="fw-bold text-white m-0">#{{ order.order_number }}</h5>
+                    <div class="text-white-50 small mt-1"><i class="bi bi-clock me-1"></i> Placed on {{ order.date }}</div>
+                </div>
+                <div class="text-end">
+                    <span class="text-muted small d-block">CURRENT STATUS</span>
+                    {% if order.status == 'Delivered' or order.status == 'Completed' %}
+                        <span class="badge badge-status-delivered rounded-pill fs-6"><i class="bi bi-check-circle-fill me-1"></i> Delivered</span>
+                    {% elif order.status == 'Shipped' %}
+                        <span class="badge badge-status-shipped rounded-pill fs-6"><i class="bi bi-truck me-1"></i> Shipped</span>
+                    {% elif order.status == 'Processing' %}
+                        <span class="badge badge-status-processing rounded-pill fs-6"><i class="bi bi-arrow-repeat me-1"></i> Processing</span>
+                    {% elif order.status == 'Cancelled' %}
+                        <span class="badge badge-status-cancelled rounded-pill fs-6"><i class="bi bi-x-circle-fill me-1"></i> Cancelled</span>
+                    {% else %}
+                        <span class="badge badge-status-pending rounded-pill fs-6"><i class="bi bi-hourglass-split me-1"></i> {{ order.status }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Live Progress Tracking Stepper -->
+            {% if order.status == 'Cancelled' %}
+            <div class="alert alert-danger border-0 rounded-4 my-4 d-flex align-items-center gap-2" style="background: rgba(239, 68, 68, 0.15);">
+                <i class="bi bi-exclamation-octagon-fill fs-4 text-danger"></i>
+                <div>
+                    <strong>Order Cancelled</strong>
+                    <div class="small text-white-50">This order was cancelled. If you have any inquiries, please contact our support team.</div>
+                </div>
+            </div>
+            {% else %}
+            <div class="order-stepper-wrapper my-4 px-2">
+                <div class="d-flex justify-content-between position-relative">
+                    <!-- Progress Connecting Bar -->
+                    <div class="stepper-line position-absolute top-50 start-0 w-100 translate-middle-y" style="height: 4px; background: rgba(255,255,255,0.1); z-index: 1;">
+                        <div class="stepper-line-progress" style="height: 100%; width: {% if order.step == 4 %}100%{% elif order.step == 3 %}66%{% elif order.step == 2 %}33%{% else %}0%{% endif %}; background: linear-gradient(90deg, #6366f1, #22c55e); transition: width 0.4s ease;"></div>
+                    </div>
+
+                    <!-- Step 1: Placed -->
+                    <div class="stepper-node text-center position-relative" style="z-index: 2;">
+                        <div class="node-icon rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 {% if order.step >= 1 %}active-node{% endif %}" style="width: 42px; height: 42px; background: {% if order.step >= 1 %}#6366f1{% else %}#1e293b{% endif %}; border: 2px solid {% if order.step >= 1 %}#818cf8{% else %}rgba(255,255,255,0.2){% endif %};">
+                            <i class="bi bi-bag-check-fill text-white"></i>
+                        </div>
+                        <div class="node-label small fw-semibold {% if order.step >= 1 %}text-white{% else %}text-muted{% endif %}">Order Placed</div>
+                    </div>
+
+                    <!-- Step 2: Processing -->
+                    <div class="stepper-node text-center position-relative" style="z-index: 2;">
+                        <div class="node-icon rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 {% if order.step >= 2 %}active-node{% endif %}" style="width: 42px; height: 42px; background: {% if order.step >= 2 %}#6366f1{% else %}#1e293b{% endif %}; border: 2px solid {% if order.step >= 2 %}#818cf8{% else %}rgba(255,255,255,0.2){% endif %};">
+                            <i class="bi bi-box-seam-fill text-white"></i>
+                        </div>
+                        <div class="node-label small fw-semibold {% if order.step >= 2 %}text-white{% else %}text-muted{% endif %}">Processing</div>
+                    </div>
+
+                    <!-- Step 3: Shipped -->
+                    <div class="stepper-node text-center position-relative" style="z-index: 2;">
+                        <div class="node-icon rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 {% if order.step >= 3 %}active-node{% endif %}" style="width: 42px; height: 42px; background: {% if order.step >= 3 %}#eab308{% else %}#1e293b{% endif %}; border: 2px solid {% if order.step >= 3 %}#fde047{% else %}rgba(255,255,255,0.2){% endif %};">
+                            <i class="bi bi-truck text-white"></i>
+                        </div>
+                        <div class="node-label small fw-semibold {% if order.step >= 3 %}text-white{% else %}text-muted{% endif %}">Shipped</div>
+                    </div>
+
+                    <!-- Step 4: Delivered -->
+                    <div class="stepper-node text-center position-relative" style="z-index: 2;">
+                        <div class="node-icon rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 {% if order.step >= 4 %}active-node-success{% endif %}" style="width: 42px; height: 42px; background: {% if order.step >= 4 %}#22c55e{% else %}#1e293b{% endif %}; border: 2px solid {% if order.step >= 4 %}#86efac{% else %}rgba(255,255,255,0.2){% endif %};">
+                            <i class="bi bi-check-lg text-white"></i>
+                        </div>
+                        <div class="node-label small fw-semibold {% if order.step >= 4 %}text-success{% else %}text-muted{% endif %}">Delivered</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Items & Summary Grid -->
+            <div class="row g-4 pt-2">
+                <!-- Items Purchased -->
+                <div class="col-lg-8">
+                    <h6 class="fw-bold text-uppercase text-muted mb-3" style="font-size: 0.78rem; letter-spacing: 0.5px;">
+                        <i class="bi bi-book-half me-1 text-primary"></i> Books in this Order
+                    </h6>
+                    <div class="d-flex flex-column gap-2">
+                        {% for item in order.order_items %}
+                        <div class="p-3 rounded-3 d-flex align-items-center justify-content-between" style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.04);">
+                            <div class="d-flex align-items-center gap-3">
+                                {% if item.img %}
+                                    <img src="{{ item.img }}" class="rounded shadow-sm" style="width: 44px; height: 58px; object-fit: cover;" alt="{{ item.title }}">
+                                {% else %}
+                                    <div class="rounded d-flex align-items-center justify-content-center bg-dark text-muted" style="width: 44px; height: 58px;"><i class="bi bi-book"></i></div>
+                                {% endif %}
+                                <div>
+                                    <div class="fw-bold text-white mb-0">{{ item.title or 'Book Item' }}</div>
+                                    <div class="text-muted small">{{ item.author }} • <span class="badge bg-secondary bg-opacity-25 text-white-50">{{ item.category_name or 'General' }}</span></div>
+                                    <div class="small text-white-50">Qty: <strong>{{ item.quantity }}</strong> × ₹{{ item.price }}</div>
+                                </div>
+                            </div>
+                            <div class="fw-bold text-white">
+                                ₹{{ (item.quantity * item.price) | round(2) }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Shipping & Total Info -->
+                <div class="col-lg-4">
+                    <div class="p-3 rounded-4 h-100 d-flex flex-column justify-content-between" style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.04);">
+                        <div>
+                            <h6 class="fw-bold text-uppercase text-muted mb-2" style="font-size: 0.78rem;">
+                                <i class="bi bi-geo-alt me-1 text-primary"></i> Shipping Address
+                            </h6>
+                            <p class="text-white small mb-3">{{ order.shipping_address }}</p>
+
+                            <h6 class="fw-bold text-uppercase text-muted mb-2" style="font-size: 0.78rem;">
+                                <i class="bi bi-credit-card me-1 text-primary"></i> Payment Method
+                            </h6>
+                            <p class="text-white-50 small mb-3"><span class="badge bg-secondary bg-opacity-25 text-white">{{ order.payment_method }}</span></p>
+                        </div>
+
+                        <div class="pt-3 border-top border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+                            <span class="text-muted small">Total Paid:</span>
+                            <span class="fs-4 fw-bold text-success">₹{{ order.total }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <!-- Empty State -->
+    <div class="card border-0 shadow rounded-4 p-5 text-center my-4" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08) !important;">
+        <div class="mb-3">
+            <i class="bi bi-bag-x text-muted" style="font-size: 4.5rem;"></i>
+        </div>
+        <h3 class="fw-bold text-white mb-2">No Orders Found</h3>
+        <p class="text-muted fs-6 mb-4">
+            You haven't placed any orders yet. Discover great reads from our new & pre-loved catalog today!
+        </p>
+        <div>
+            <a href="{{ url_for('books') }}" class="btn btn-primary rounded-pill px-5 py-2" style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); border: none;">
+                <i class="bi bi-compass me-1"></i> Explore Books
+            </a>
+        </div>
+    </div>
+{% endif %}
 {% endblock %}

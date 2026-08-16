@@ -383,6 +383,20 @@ def check_user_access():
         if not (endpoint.startswith("admin_") or endpoint.startswith("api_") or endpoint in ["logout", "static", "update_avatar_api"]):
             return redirect(url_for("admin_dashboard"))
 
+    # 3. Ensure user avatar and profile details are always up-to-date in session across all pages
+    if session.get("user_id") and session.get("user") != "Admin":
+        try:
+            conn = mysql.connection
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT name, email, avatar FROM users WHERE id = %s", (session.get("user_id"),))
+                user_record = cursor.fetchone()
+                if user_record:
+                    session["user_name"] = user_record["name"]
+                    session["user_email"] = user_record["email"]
+                    session["user_avatar"] = user_record.get("avatar")
+        except Exception as e:
+            print(f"Error syncing user profile session: {e}")
+
 # ==========================
 # HOME
 # ==========================
@@ -966,6 +980,7 @@ def update_profile():
 
         # Sync updated name back to the session
         session["user_name"] = name
+        session.modified = True
         return redirect(url_for("profile_details", success="true"))
     except Exception as e:
         return f"Database error: {e}", 500
@@ -990,6 +1005,7 @@ def update_avatar_api():
 
         # Save in session for instant display
         session["user_avatar"] = avatar
+        session.modified = True
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -24,19 +24,37 @@
             
             {% if session.get('user') %}
                 <div class="dropdown">
-                    <a href="#" class="dropdown-toggle text-decoration-none text-white" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle fs-5"></i> <span class="ms-1">{{ session.get('user_name') or session.get('user') }}</span>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
-                        {% if session.get('user') == 'Admin' %}
-                            <li><a class="dropdown-item py-2" href="{{ url_for('admin_dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>Admin Panel</a></li>
+                    <a href="#" class="dropdown-toggle text-decoration-none text-white d-inline-flex align-items-center gap-2" data-bs-toggle="dropdown" aria-expanded="false">
+                        {% if session.get('user_avatar') %}
+                            <img src="{{ session.get('user_avatar') }}" alt="Profile" class="rounded-circle shadow-sm" style="width: 30px; height: 30px; object-fit: cover; border: 1.5px solid rgba(255,255,255,0.6);">
                         {% else %}
-                            <li><a class="dropdown-item py-2" href="{{ url_for('profile') }}"><i class="bi bi-speedometer2 me-2"></i>My Dashboard</a></li>
-                            <li><a class="dropdown-item py-2" href="{{ url_for('orders') }}"><i class="bi bi-bag-check-fill me-2"></i>My Orders</a></li>
-                            <li><a class="dropdown-item py-2" href="{{ url_for('profile_details') }}"><i class="bi bi-person-fill me-2"></i>My Profile</a></li>
+                            <i class="bi bi-person-circle fs-5"></i>
                         {% endif %}
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item py-2 text-danger" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                        <span class="ms-1">{{ session.get('user_name') or session.get('user') }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-2" style="min-width: 230px; background: #18181c; border: 1px solid #2e2e38 !important;">
+                        <li class="px-3 py-2 mb-2 rounded-3 bg-dark bg-opacity-75 d-flex align-items-center gap-2">
+                            {% if session.get('user_avatar') %}
+                                <img src="{{ session.get('user_avatar') }}" alt="Profile" class="rounded-circle" style="width: 38px; height: 38px; object-fit: cover; border: 1.5px solid #9c436b;">
+                            {% else %}
+                                <div class="bg-secondary bg-opacity-25 text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                    <i class="bi bi-person-fill fs-5"></i>
+                                </div>
+                            {% endif %}
+                            <div class="overflow-hidden">
+                                <div class="fw-bold text-white text-truncate small" style="max-width: 140px;">{{ session.get('user_name') or session.get('user') }}</div>
+                                <div class="text-muted text-truncate" style="font-size: 0.75rem; max-width: 140px;">{{ session.get('user_email') or 'Logged in' }}</div>
+                            </div>
+                        </li>
+                        {% if session.get('user') == 'Admin' %}
+                            <li><a class="dropdown-item py-2 text-white rounded-2" href="{{ url_for('admin_dashboard') }}"><i class="bi bi-speedometer2 me-2 text-primary"></i>Admin Panel</a></li>
+                        {% else %}
+                            <li><a class="dropdown-item py-2 text-white rounded-2" href="{{ url_for('profile') }}"><i class="bi bi-speedometer2 me-2 text-primary"></i>My Dashboard</a></li>
+                            <li><a class="dropdown-item py-2 text-white rounded-2" href="{{ url_for('orders') }}"><i class="bi bi-bag-check-fill me-2 text-success"></i>My Orders</a></li>
+                            <li><a class="dropdown-item py-2 text-white rounded-2" href="{{ url_for('profile_details') }}"><i class="bi bi-person-fill me-2 text-info"></i>My Profile</a></li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider my-1 border-secondary opacity-25"></li>
+                        <li><a class="dropdown-item py-2 text-danger rounded-2" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                     </ul>
                 </div>
             {% else %}

@@ -424,9 +424,9 @@ def books():
     return render_template("books.html", categories=categories_list)
 
 
-@app.route("/book/<int:id>")
-def book_details(id):
-    return render_template("book_details.html", id=id)
+@app.route("/book")
+def book_details():
+    return render_template("book_details.html")
 
 
 # ==========================
@@ -454,7 +454,7 @@ def categories():
 # SELL BOOK
 # ==========================
 
-@app.route("/sell-book")
+@app.route("/sell--book")
 def sell_book():
     categories_list = []
     try:

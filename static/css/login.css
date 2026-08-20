@@ -177,6 +177,144 @@ opacity: 0.3;
 
 }
 
+/* Shake Animation for Invalid Credentials */
+@keyframes shakeError {
+    0%, 100% { transform: translateX(0); }
+    15%, 45%, 75% { transform: translateX(-8px) scale(0.995); }
+    30%, 60%, 90% { transform: translateX(8px) scale(1.005); }
+}
+
+@keyframes pulseErrorIcon {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.75; }
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.shake-card {
+    animation: shakeError 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    border: 2px solid rgba(239, 68, 68, 0.7) !important;
+    box-shadow: 0 20px 60px rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Creative Bookish Error Box */
+.creative-error-card {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35), inset 0 0 15px rgba(239, 68, 68, 0.15);
+    animation: fadeInDown 0.4s ease-out;
+}
+
+.creative-error-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.creative-error-icon {
+    width: 36px;
+    height: 36px;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #f87171;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    animation: pulseErrorIcon 2s infinite ease-in-out;
+}
+
+.creative-error-title {
+    font-weight: 800;
+    font-size: 0.96rem;
+    color: #fecaca;
+    letter-spacing: 0.3px;
+    line-height: 1.2;
+}
+
+.creative-error-body {
+    font-size: 0.86rem;
+    color: #e2e8f0;
+    line-height: 1.45;
+    margin-bottom: 10px;
+    padding-left: 2px;
+}
+
+.creative-error-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.8rem;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.creative-error-footer a {
+    color: #ffd166 !important;
+    text-decoration: none !important;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.creative-error-footer a:hover {
+    transform: translateX(3px);
+    opacity: 0.85;
+}
+
+/* Caps Lock Warning Banner */
+.caps-lock-warning {
+    display: none;
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #fef08a;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 8px;
+    margin-top: 8px;
+    align-items: center;
+    gap: 6px;
+    animation: fadeInDown 0.2s ease-out;
+}
+
+/* Input Error Glow */
+.input-error-glow {
+    border: 1.5px solid rgba(239, 68, 68, 0.9) !important;
+    background-color: rgba(255, 241, 242, 0.95) !important;
+    color: #111827 !important;
+}
+
+.input-error-glow:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.35) !important;
+}
+
+.login-btn:disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+}
+
 @media(max-width:992px){
 
 .login-card{

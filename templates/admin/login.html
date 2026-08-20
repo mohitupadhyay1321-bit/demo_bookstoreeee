@@ -325,20 +325,22 @@
             </div>
             {% endif %}
 
-            <form action="/admin-login" method="POST" class="text-start">
+            <form action="/admin-login" method="POST" class="text-start" id="adminLoginForm">
                 
                 <!-- Email Input -->
                 <div class="mb-3">
-                    <label class="form-label">Email Address</label>
+                    <label class="form-label">Email Address or Username</label>
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="bi bi-envelope"></i>
                         </span>
-                        <input type="email"
+                        <input type="text"
                                class="form-control"
                                name="email"
                                placeholder="admin@bookbazar.com"
-                               required>
+                               value="{{ entered_email or email or '' }}"
+                               required
+                               {% if not entered_email %}autofocus{% endif %}>
                     </div>
                 </div>
 
@@ -354,7 +356,8 @@
                                class="form-control"
                                name="password"
                                placeholder="••••••••"
-                               required>
+                               required
+                               {% if entered_email %}autofocus{% endif %}>
                         <button class="btn-toggle-password" type="button" onclick="togglePassword()">
                             <i class="bi bi-eye" id="toggleIcon"></i>
                         </button>
@@ -362,8 +365,9 @@
                 </div>
 
                 <!-- Submit Button -->
-                <button class="btn btn-login w-100">
-                    Sign In to Console
+                <button class="btn btn-login w-100 d-flex align-items-center justify-content-center gap-2" id="adminSubmitBtn" type="submit">
+                    <span id="adminBtnText">Sign In to Console</span>
+                    <span class="spinner-border spinner-border-sm d-none" id="adminBtnSpinner" role="status" aria-hidden="true"></span>
                 </button>
                 
             </form>
@@ -391,6 +395,21 @@
                 toggleIcon.classList.remove("bi-eye-slash");
                 toggleIcon.classList.add("bi-eye");
             }
+        }
+
+        const adminForm = document.getElementById("adminLoginForm");
+        const adminSubmitBtn = document.getElementById("adminSubmitBtn");
+        const adminBtnText = document.getElementById("adminBtnText");
+        const adminBtnSpinner = document.getElementById("adminBtnSpinner");
+
+        if (adminForm) {
+            adminForm.addEventListener("submit", function() {
+                if (adminSubmitBtn) {
+                    adminSubmitBtn.disabled = true;
+                    if (adminBtnText) adminBtnText.textContent = "Authenticating...";
+                    if (adminBtnSpinner) adminBtnSpinner.classList.remove("d-none");
+                }
+            });
         }
     </script>
 </body>

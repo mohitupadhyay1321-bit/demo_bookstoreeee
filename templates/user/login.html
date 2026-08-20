@@ -55,15 +55,32 @@ Buy New Books • Sell Pre-Loved Books • Join India's Reading Community
 
 <div class="col-lg-6 d-flex align-items-center justify-content-center">
 
-<div class="login-card">
+<div class="login-card {% if error %}shake-card{% endif %}">
 
 <h2>Welcome Back 👋</h2>
 
-<p class="subtitle">Login to continue</p>
+<p class="subtitle">Login to continue reading</p>
 
 {% if error %}
-<div class="alert alert-danger border-0 shadow-sm rounded-4 p-3 mb-4 text-center" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
-    <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ error }}
+<div class="creative-error-card">
+    <div class="creative-error-header">
+        <div class="creative-error-icon">
+            <i class="bi bi-journal-x"></i>
+        </div>
+        <div>
+            <span class="badge bg-danger bg-opacity-25 text-danger-emphasis border border-danger border-opacity-25 py-0 px-2 small">Library Notice</span>
+            <div class="creative-error-title">{{ error_title or 'Authentication Notice' }}</div>
+        </div>
+    </div>
+    <div class="creative-error-body">
+        {{ error }}
+    </div>
+    <div class="creative-error-footer">
+        <span class="text-white-50 small"><i class="bi bi-lightbulb me-1"></i>Forgot your key?</span>
+        <a href="{{ url_for('forgot_password') }}">
+            <i class="bi bi-key-fill"></i> Reset Password &rarr;
+        </a>
+    </div>
 </div>
 {% endif %}
 
@@ -79,11 +96,11 @@ Buy New Books • Sell Pre-Loved Books • Join India's Reading Community
 </div>
 {% endif %}
 
-<form action="{{ url_for('login') }}" method="POST">
+<form action="{{ url_for('login') }}" method="POST" id="loginForm">
 
 <div class="mb-3">
 
-<label>Email</label>
+<label for="emailInput">Email or Username</label>
 
 <div class="input-group">
 
@@ -93,15 +110,20 @@ Buy New Books • Sell Pre-Loved Books • Join India's Reading Community
 
 </span>
 
-<input type="email"
+<input type="text"
+
+id="emailInput"
 
 name="email"
 
-class="form-control"
+class="form-control {% if error %}input-error-glow{% endif %}"
 
-placeholder="Enter Email"
+placeholder="Enter Email or Username"
 
-required>
+value="{{ entered_email or email or '' }}"
+
+required
+{% if not entered_email %}autofocus{% endif %}>
 
 </div>
 
@@ -109,7 +131,7 @@ required>
 
 <div class="mb-3">
 
-<label>Password</label>
+<label for="password">Password</label>
 
 <div class="input-group">
 
@@ -125,22 +147,31 @@ id="password"
 
 name="password"
 
-class="form-control"
+class="form-control {% if error %}input-error-glow{% endif %}"
 
 placeholder="Password"
 
-required>
+required
+{% if entered_email %}autofocus{% endif %}>
 
 <button class="btn btn-outline-secondary"
 
 type="button"
 
-onclick="togglePassword()">
+onclick="togglePassword()"
 
-<i class="bi bi-eye"></i>
+title="Toggle password visibility">
+
+<i class="bi bi-eye" id="toggleIcon"></i>
 
 </button>
 
+</div>
+
+<!-- Real-time Caps Lock Warning -->
+<div id="capsLockWarning" class="caps-lock-warning">
+    <i class="bi bi-exclamation-circle-fill text-warning"></i>
+    <span><strong>Caps Lock is ON!</strong> Watch out for uppercase characters.</span>
 </div>
 
 </div>
@@ -159,10 +190,9 @@ onclick="togglePassword()">
 
 </div>
 
-<button class="btn login-btn">
-
-Login
-
+<button class="btn login-btn d-flex align-items-center justify-content-center gap-2" id="submitLoginBtn" type="submit">
+    <span id="btnText">Login</span>
+    <span class="spinner-border spinner-border-sm d-none" id="btnSpinner" role="status" aria-hidden="true"></span>
 </button>
 
 </form>
@@ -192,11 +222,76 @@ Register
 <script>
 
 function togglePassword(){
+    const password = document.getElementById("password");
+    const icon = document.getElementById("toggleIcon");
+    if (password.type === "password") {
+        password.type = "text";
+        if (icon) {
+            icon.classList.remove("bi-eye");
+            icon.classList.add("bi-eye-slash");
+        }
+    } else {
+        password.type = "password";
+        if (icon) {
+            icon.classList.remove("bi-eye-slash");
+            icon.classList.add("bi-eye");
+        }
+    }
+}
 
-const password=document.getElementById("password");
+// Live Caps Lock Detection
+const passwordInput = document.getElementById("password");
+const emailInput = document.getElementById("emailInput");
+const capsWarning = document.getElementById("capsLockWarning");
 
-password.type=password.type==="password"?"text":"password";
+function checkCapsLock(e) {
+    if (e.getModifierState && e.getModifierState("CapsLock")) {
+        capsWarning.style.display = "flex";
+    } else {
+        capsWarning.style.display = "none";
+    }
+}
 
+if (passwordInput && capsWarning) {
+    passwordInput.addEventListener("keyup", checkCapsLock);
+    passwordInput.addEventListener("keydown", checkCapsLock);
+    passwordInput.addEventListener("focus", checkCapsLock);
+    passwordInput.addEventListener("blur", function() {
+        capsWarning.style.display = "none";
+    });
+}
+
+// Remember Me & Form Submit Feedback
+const loginForm = document.getElementById("loginForm");
+const rememberMeCheckbox = document.getElementById("rememberMe");
+const submitLoginBtn = document.getElementById("submitLoginBtn");
+const btnText = document.getElementById("btnText");
+const btnSpinner = document.getElementById("btnSpinner");
+
+// Hydrate saved email if Remember Me was previously checked
+const savedEmail = localStorage.getItem("bookbazar_remember_email");
+if (savedEmail && emailInput && !emailInput.value) {
+    emailInput.value = savedEmail;
+    if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
+    if (passwordInput) passwordInput.focus();
+}
+
+if (loginForm) {
+    loginForm.addEventListener("submit", function() {
+        // Save or clear Remember Me
+        if (rememberMeCheckbox && rememberMeCheckbox.checked && emailInput) {
+            localStorage.setItem("bookbazar_remember_email", emailInput.value.trim());
+        } else {
+            localStorage.removeItem("bookbazar_remember_email");
+        }
+
+        // Show loading spinner
+        if (submitLoginBtn) {
+            submitLoginBtn.disabled = true;
+            if (btnText) btnText.textContent = "Logging in...";
+            if (btnSpinner) btnSpinner.classList.remove("d-none");
+        }
+    });
 }
 
 </script>

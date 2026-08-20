@@ -502,7 +502,6 @@ def login():
             return redirect(url_for("profile"))
 
     error = None
-    error_title = None
     entered_email = ""
 
     if request.method == "POST":
@@ -511,8 +510,7 @@ def login():
         entered_email = email
 
         if not email or not password:
-            error_title = "Missing Fields ✍️"
-            error = "Please provide both your email address and password to continue."
+            error = "Please enter both Email and Password."
         else:
             try:
                 conn = mysql.connection
@@ -525,7 +523,6 @@ def login():
 
                 if user and check_password_hash(user["password"], password):
                     if user["role"] == "Admin":
-                        error_title = "Admin Portal Required 🛡️"
                         error = "Admin accounts cannot log in through the User Portal. Please use the Admin Login."
                     else:
                         session.clear()
@@ -536,19 +533,8 @@ def login():
                         session["user_avatar"] = user.get("avatar")
                         return redirect(url_for("profile"))
                 else:
-                    import random
-                    creative_errors = [
-                        ("Plot Twist! 🎭", "We couldn't find a matching story for this email & password combination in our library archives."),
-                        ("Chapter Not Found! 📖", "The secret passphrase doesn't match this reader's account in our records."),
-                        ("Vault Locked! 🔐", "The book keeper couldn't authenticate those credentials. Check for typos or reset your password below."),
-                        ("Mystery Unsolved! 🔍", "Elementary, dear reader: looks like there is a typo in your email or secret passkey."),
-                        ("Story Mismatch! 📜", "These credentials seem to belong to a different tale. Double-check your spelling!")
-                    ]
-                    chosen = random.choice(creative_errors)
-                    error_title = chosen[0]
-                    error = chosen[1]
+                    error = "Invalid Email or Password"
             except Exception as e:
-                error_title = "System Anomaly ⚠️"
                 error = f"Database error: {e}"
 
     registered = request.args.get("registered")
@@ -556,7 +542,6 @@ def login():
     return render_template(
         "user/login.html",
         error=error,
-        error_title=error_title,
         entered_email=entered_email,
         registered=registered,
         password_reset=password_reset

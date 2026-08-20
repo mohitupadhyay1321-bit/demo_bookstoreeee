@@ -62,25 +62,9 @@ Buy New Books • Sell Pre-Loved Books • Join India's Reading Community
 <p class="subtitle">Login to continue reading</p>
 
 {% if error %}
-<div class="creative-error-card">
-    <div class="creative-error-header">
-        <div class="creative-error-icon">
-            <i class="bi bi-journal-x"></i>
-        </div>
-        <div>
-            <span class="badge bg-danger bg-opacity-25 text-danger-emphasis border border-danger border-opacity-25 py-0 px-2 small">Library Notice</span>
-            <div class="creative-error-title">{{ error_title or 'Authentication Notice' }}</div>
-        </div>
-    </div>
-    <div class="creative-error-body">
-        {{ error }}
-    </div>
-    <div class="creative-error-footer">
-        <span class="text-white-50 small"><i class="bi bi-lightbulb me-1"></i>Forgot your key?</span>
-        <a href="{{ url_for('forgot_password') }}">
-            <i class="bi bi-key-fill"></i> Reset Password &rarr;
-        </a>
-    </div>
+<div class="alert alert-danger border-0 shadow-sm rounded-4 p-3 mb-4 text-center d-flex align-items-center justify-content-center gap-2" style="background: rgba(239, 68, 68, 0.15); color: #fee2e2; border: 1px solid rgba(239, 68, 68, 0.3) !important;">
+    <i class="bi bi-exclamation-circle-fill text-danger fs-5"></i>
+    <span class="fw-semibold">{{ error }}</span>
 </div>
 {% endif %}
 

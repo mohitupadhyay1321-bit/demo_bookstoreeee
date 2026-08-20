@@ -425,8 +425,10 @@ def books():
 
 
 @app.route("/book")
-def book_details():
-    return render_template("book_details.html")
+@app.route("/book/<int:id>")
+@app.route("/books/<int:id>")
+def book_details(id=1):
+    return render_template("book_details.html", id=id)
 
 
 # ==========================
@@ -454,6 +456,7 @@ def categories():
 # SELL BOOK
 # ==========================
 
+@app.route("/sell-book")
 @app.route("/sell--book")
 def sell_book():
     categories_list = []
@@ -472,6 +475,7 @@ def sell_book():
 # ==========================
 
 @app.route("/cart")
+@app.route("/my-cart")
 def cart():
     if "user" not in session:
         return redirect(url_for("login"))
@@ -483,6 +487,7 @@ def cart():
 # ==========================
 
 @app.route("/wishlist")
+@app.route("/my-wishlist")
 def wishlist():
     if "user" not in session:
         return redirect(url_for("login"))
@@ -821,6 +826,7 @@ def profile():
     )
 
 
+@app.route("/profile-details")
 @app.route("/profile/details")
 def profile_details():
     if "user" not in session:
@@ -848,6 +854,7 @@ def profile_details():
 # ==========================
 
 @app.route("/my-listings")
+@app.route("/my-listing")
 def my_listings():
     if "user" not in session:
         return redirect(url_for("login"))
@@ -2456,6 +2463,7 @@ def checkout():
 
 
 @app.route("/orders")
+@app.route("/my-orders")
 def orders():
     if "user" not in session:
         return redirect(url_for("login"))
@@ -2623,6 +2631,15 @@ def place_order():
         return redirect(url_for("orders"))
     except Exception as e:
         return f"Error placing order: {e}"
+
+
+# ==========================
+# 404 ERROR HANDLER
+# ==========================
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template("404.html"), 404
 
 
 if __name__ == "__main__":

@@ -72,9 +72,11 @@
     </div>
     <div class="book-grid">
         <div class="book-card">
-            <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300" alt="Atomic Habits" style="height: 320px; object-fit: cover; width: 100%;">
+            <a href="{{ url_for('book_details', id=1) }}">
+                <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300" alt="Atomic Habits" style="height: 320px; object-fit: cover; width: 100%;">
+            </a>
             <div class="book-info">
-                <h3>Atomic Habits</h3>
+                <h3><a href="{{ url_for('book_details', id=1) }}" class="text-white text-decoration-none">Atomic Habits</a></h3>
                 <p>James Clear</p>
                 <div class="price">₹499</div>
                 {% if session.get('user') %}
@@ -87,16 +89,18 @@
                     Add to Cart
                 </a>
                 {% else %}
-                <a href="{{ url_for('login') }}" class="book-btn">
+                <a href="{{ url_for('login', next=url_for('book_details', id=1)) }}" class="book-btn">
                     Login to Buy
                 </a>
                 {% endif %}
             </div>
         </div>
         <div class="book-card">
-            <img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300" alt="Deep Work" style="height: 320px; object-fit: cover; width: 100%;">
+            <a href="{{ url_for('book_details', id=2) }}">
+                <img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300" alt="Deep Work" style="height: 320px; object-fit: cover; width: 100%;">
+            </a>
             <div class="book-info">
-                <h3>Deep Work</h3>
+                <h3><a href="{{ url_for('book_details', id=2) }}" class="text-white text-decoration-none">Deep Work</a></h3>
                 <p>Cal Newport</p>
                 <div class="price">₹399</div>
                 {% if session.get('user') %}
@@ -109,16 +113,18 @@
                     Add to Cart
                 </a>
                 {% else %}
-                <a href="{{ url_for('login') }}" class="book-btn">
+                <a href="{{ url_for('login', next=url_for('book_details', id=2)) }}" class="book-btn">
                     Login to Buy
                 </a>
                 {% endif %}
             </div>
         </div>
         <div class="book-card">
-            <img src="https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300" alt="Rich Dad Poor Dad" style="height: 320px; object-fit: cover; width: 100%;">
+            <a href="{{ url_for('book_details', id=3) }}">
+                <img src="https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300" alt="Rich Dad Poor Dad" style="height: 320px; object-fit: cover; width: 100%;">
+            </a>
             <div class="book-info">
-                <h3>Rich Dad Poor Dad</h3>
+                <h3><a href="{{ url_for('book_details', id=3) }}" class="text-white text-decoration-none">Rich Dad Poor Dad</a></h3>
                 <p>Robert Kiyosaki</p>
                 <div class="price">₹299</div>
                 {% if session.get('user') %}
@@ -131,16 +137,18 @@
                     Add to Cart
                 </a>
                 {% else %}
-                <a href="{{ url_for('login') }}" class="book-btn">
+                <a href="{{ url_for('login', next=url_for('book_details', id=3)) }}" class="book-btn">
                     Login to Buy
                 </a>
                 {% endif %}
             </div>
         </div>
         <div class="book-card">
-            <img src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=300" alt="The Psychology of Money" style="height: 320px; object-fit: cover; width: 100%;">
+            <a href="{{ url_for('book_details', id=4) }}">
+                <img src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=300" alt="The Psychology of Money" style="height: 320px; object-fit: cover; width: 100%;">
+            </a>
             <div class="book-info">
-                <h3>The Psychology of Money</h3>
+                <h3><a href="{{ url_for('book_details', id=4) }}" class="text-white text-decoration-none">The Psychology of Money</a></h3>
                 <p>Morgan Housel</p>
                 <div class="price">₹599</div>
                 {% if session.get('user') %}
@@ -153,7 +161,7 @@
                     Add to Cart
                 </a>
                 {% else %}
-                <a href="{{ url_for('login') }}" class="book-btn">
+                <a href="{{ url_for('login', next=url_for('book_details', id=4)) }}" class="book-btn">
                     Login to Buy
                 </a>
                 {% endif %}

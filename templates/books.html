@@ -1,39 +1,182 @@
 {% extends 'layouts/user_base.html' if session.get('user') == 'User' else 'base.html' %}
 
-{% block title %}Browse Books | BookBazar{% endblock %}
+{% block title %}Browse & Search Books | {{ store_name or 'BookBazar' }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.search-input-group {
+    position: relative;
+    max-width: 420px;
+    width: 100%;
+}
+
+.search-input-group .search-icon {
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%);
+    color: #818cf8;
+    font-size: 1.1rem;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.search-input-group .clear-search-btn {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 1.1rem;
+    cursor: pointer;
+    z-index: 5;
+    display: none;
+    transition: color 0.2s ease;
+}
+
+.search-input-group .clear-search-btn:hover {
+    color: #ffffff;
+}
+
+.search-input-control {
+    background: rgba(15, 23, 42, 0.75) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+    border-radius: 50px !important;
+    padding: 12px 42px 12px 46px !important;
+    font-size: 0.95rem !important;
+    transition: all 0.25s ease !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+}
+
+.search-input-control:focus {
+    background: rgba(15, 23, 42, 0.95) !important;
+    border-color: #818cf8 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35) !important;
+    color: #ffffff !important;
+}
+
+.search-input-control::placeholder {
+    color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.browse-glass-panel {
+    background: rgba(15, 23, 42, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 20px;
+    backdrop-filter: blur(15px);
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container py-5" style="margin-top: 100px;">
-    <div class="row mb-5 align-items-center">
-        <div class="col-md-6">
-            <h2 class="fw-bold">All Books</h2>
-            <p class="text-muted">Explore our wide collection of new and pre-loved books.</p>
-        </div>
-        <div class="col-md-6 text-md-end d-flex justify-content-md-end gap-3 align-items-center">
-            <!-- Category Filter Dropdown -->
-            <div class="dropdown">
-                <button class="btn btn-outline-secondary dropdown-toggle rounded-pill px-3" type="button" id="categoryFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    Category: <span id="current-category">All</span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="categoryFilterDropdown" id="category-filter-list">
-                    <li><a class="dropdown-item category-filter-item active" href="#" data-category="all">All Categories</a></li>
-                    {% for cat in categories %}
-                    <li><a class="dropdown-item category-filter-item" href="#" data-category="{{ cat }}">{{ cat }}</a></li>
-                    {% endfor %}
-                </ul>
+
+    <!-- Top Header & Search Control Bar -->
+    <div class="browse-glass-panel p-4 mb-4 shadow-sm">
+        <div class="row g-3 align-items-center justify-content-between">
+            
+            <div class="col-lg-4">
+                <div class="d-flex align-items-center gap-2">
+                    <h3 class="fw-bold text-white mb-0">Browse Books</h3>
+                    <span class="badge bg-primary bg-opacity-25 text-info border border-primary border-opacity-25 px-2.5 py-1 small" id="books-count-badge">
+                        Loading...
+                    </span>
+                </div>
+                <p class="text-white-50 small mb-0 mt-1">Explore our marketplace of new and pre-loved books.</p>
             </div>
 
-            <!-- Condition Filter -->
-            <div class="btn-group">
-                <button class="btn btn-outline-secondary filter-btn active" data-filter="all">All</button>
-                <button class="btn btn-outline-secondary filter-btn" data-filter="new">New</button>
-                <button class="btn btn-outline-secondary filter-btn" data-filter="pre-loved">Pre-Loved</button>
+            <!-- Interactive Search Input -->
+            <div class="col-lg-5 col-md-6">
+                <div class="search-input-group mx-auto">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text" 
+                           class="form-control search-input-control" 
+                           id="book-search-input" 
+                           placeholder="Search by title, author, or keyword..." 
+                           autocomplete="off">
+                    <button type="button" class="clear-search-btn" id="clear-search-btn" title="Clear search">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </button>
+                </div>
             </div>
+
+            <!-- Filters (Category & Condition) -->
+            <div class="col-lg-3 col-md-6 text-md-end d-flex justify-content-lg-end justify-content-start gap-2 align-items-center flex-wrap">
+                <!-- Category Filter Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle rounded-pill px-3 py-2 text-white border-opacity-25 small" type="button" id="categoryFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="background: rgba(30, 41, 59, 0.5);">
+                        <i class="bi bi-tag text-info me-1"></i> <span id="current-category">All Categories</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-1" aria-labelledby="categoryFilterDropdown" id="category-filter-list" style="background: #18181c; border: 1px solid rgba(255, 255, 255, 0.15) !important;">
+                        <li><a class="dropdown-item category-filter-item text-white active rounded-2" href="#" data-category="all">All Categories</a></li>
+                        {% for cat in categories %}
+                        <li><a class="dropdown-item category-filter-item text-white rounded-2" href="#" data-category="{{ cat }}">{{ cat }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Condition Filter -->
+                <div class="btn-group" role="group">
+                    <button class="btn btn-sm btn-outline-secondary filter-btn active px-3 text-white border-opacity-25" data-filter="all">All</button>
+                    <button class="btn btn-sm btn-outline-secondary filter-btn px-2.5 text-white border-opacity-25" data-filter="new">New</button>
+                    <button class="btn btn-sm btn-outline-secondary filter-btn px-2.5 text-white border-opacity-25" data-filter="pre-loved">Pre-Loved</button>
+                </div>
+            </div>
+
         </div>
     </div>
     
+    <!-- Dynamic Books Grid -->
     <div class="row g-4" id="books-grid">
-        <!-- Dynamically populated by JS from localStorage catalog -->
+        <!-- Dynamically populated by cart.js -->
     </div>
+
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('book-search-input');
+    const clearBtn = document.getElementById('clear-search-btn');
+
+    // Parse URL query parameter (e.g. ?q=habits or ?search=habits)
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialQuery = urlParams.get('q') || urlParams.get('search') || '';
+
+    if (initialQuery && searchInput) {
+        searchInput.value = initialQuery;
+        window.currentSearchQuery = initialQuery;
+        if (clearBtn) clearBtn.style.display = 'block';
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+            window.currentSearchQuery = query;
+            if (clearBtn) {
+                clearBtn.style.display = query ? 'block' : 'none';
+            }
+            if (typeof renderBooksPage === 'function') {
+                renderBooksPage();
+            }
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            if (searchInput) {
+                searchInput.value = '';
+                searchInput.focus();
+            }
+            window.currentSearchQuery = '';
+            clearBtn.style.display = 'none';
+            if (typeof renderBooksPage === 'function') {
+                renderBooksPage();
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

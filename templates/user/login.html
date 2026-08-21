@@ -80,7 +80,30 @@ Buy New Books • Sell Pre-Loved Books • Join India's Reading Community
 </div>
 {% endif %}
 
-<form action="{{ url_for('login') }}" method="POST" id="loginForm">
+{% if next_url %}
+<div class="alert alert-info border-0 shadow-sm rounded-4 p-3 mb-4 text-center d-flex align-items-center justify-content-center gap-2" style="background: rgba(99, 102, 241, 0.15); color: #c7d2fe; border: 1px solid rgba(99, 102, 241, 0.3) !important;">
+    {% if '/cart' in next_url %}
+        <i class="bi bi-cart3 text-info fs-5"></i>
+        <span class="fw-semibold">Please log in to access and view your Shopping Cart</span>
+    {% elif '/wishlist' in next_url %}
+        <i class="bi bi-heart-fill text-danger fs-5"></i>
+        <span class="fw-semibold">Please log in to access and view your Wishlist</span>
+    {% elif '/books' in next_url %}
+        <i class="bi bi-search text-info fs-5"></i>
+        <span class="fw-semibold">Please log in to search, filter, and explore books</span>
+    {% elif '/sell' in next_url %}
+        <i class="bi bi-plus-circle text-info fs-5"></i>
+        <span class="fw-semibold">Please log in to list and sell your books</span>
+    {% else %}
+        <i class="bi bi-info-circle-fill text-info fs-5"></i>
+        <span class="fw-semibold">Please log in to continue with your book purchase</span>
+    {% endif %}
+</div>
+{% endif %}
+
+<form action="{{ url_for('login', next=next_url) if next_url else url_for('login') }}" method="POST" id="loginForm">
+<input type="hidden" name="next" value="{{ next_url or request.args.get('next', '') }}">
+<input type="hidden" name="book_id" value="{{ book_id or request.args.get('book_id', '') }}">
 
 <div class="mb-3">
 
@@ -187,7 +210,7 @@ title="Toggle password visibility">
 
 Don't have an account?
 
-<a href="{{ url_for('register') }}">
+<a href="{{ url_for('register', next=next_url) if next_url else url_for('register') }}">
 
 Register
 

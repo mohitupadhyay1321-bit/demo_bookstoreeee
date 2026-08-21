@@ -5,10 +5,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 :root{
-    --primary: rgb(18 17 17 / 0.78);
+    --primary: #6366f1;
     --secondary:#7C3AED;
     --accent:#F59E0B;
-    --dark: rgb(255 255 255);
+    --dark: #ffffff;
     --light:#F8FAFC;
     --gray: #cbd5e1;
     --success:#10B981;

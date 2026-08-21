@@ -1,275 +1,393 @@
 {% extends 'layouts/user_base.html' if session.get('user') == 'User' else 'base.html' %}
 
-{% block title %}Checkout | BookBazar{% endblock %}
+{% block title %}Checkout • Shipping & Payment | {{ store_name or 'BookBazar' }}{% endblock %}
+
+{% block extra_css %}
+<style>
+body {
+    background: #07090e !important;
+    color: #ffffff !important;
+}
+
+.checkout-wrapper {
+    margin-top: 100px;
+    margin-bottom: 70px;
+}
+
+.checkout-glass-panel {
+    background: rgba(15, 23, 42, 0.85) !important;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 24px;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6);
+}
+
+.checkout-input {
+    background: rgba(15, 23, 42, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.checkout-input:focus {
+    background: rgba(15, 23, 42, 0.95) !important;
+    border-color: #818cf8 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35) !important;
+    color: #ffffff !important;
+}
+
+.checkout-input::placeholder {
+    color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.payment-selection-card {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 16px;
+    cursor: pointer;
+}
+
+.payment-selection-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(99, 102, 241, 0.5) !important;
+}
+
+.payment-selection-card.active-selection {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(139, 92, 246, 0.18) 100%) !important;
+    border-color: #818cf8 !important;
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.35);
+}
+
+/* HIGH CONTRAST ULTRA-VISIBLE BUTTONS */
+.btn-pay-action {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #3730a3 100%) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 1.05rem !important;
+    padding: 16px 26px !important;
+    border-radius: 50px !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 10px 30px rgba(79, 70, 229, 0.6) !important;
+    transition: all 0.25s ease !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+}
+
+.btn-pay-action:hover {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+    color: #ffffff !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 14px 40px rgba(79, 70, 229, 0.8) !important;
+}
+
+.btn-pay-action * {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+.btn-cod-action {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 1.05rem !important;
+    padding: 16px 26px !important;
+    border-radius: 50px !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.5) !important;
+    transition: all 0.25s ease !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+}
+
+.btn-cod-action:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    color: #ffffff !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 14px 40px rgba(16, 185, 129, 0.7) !important;
+}
+
+.btn-cod-action * {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+.step-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+</style>
+{% endblock %}
 
 {% block content %}
+<div class="checkout-wrapper">
+    <div class="container py-4">
 
-<div class="container py-5" style="margin-top:100px;">
-
-    <h2 class="fw-bold mb-4">
-        <i class="bi bi-credit-card"></i> Checkout
-    </h2>
-
-    <form action="{{ url_for('place_order') }}" method="POST">
-
-        <div class="row g-4">
-
-            <!-- LEFT SIDE -->
-            <div class="col-lg-8">
-
-                <!-- Delivery Address -->
-                <div class="card shadow-sm border-0 rounded-4 mb-4">
-
-                    <div class="card-body p-4">
-
-                        <h4 class="fw-bold mb-4">
-                            <i class="bi bi-geo-alt-fill text-danger"></i>
-                            Delivery Address
-                        </h4>
-
-                        <div class="row">
-
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Full Name</label>
-                                <input type="text"
-                                       class="form-control"
-                                       name="fullname"
-                                       placeholder="Enter your name"
-                                       value="{{ user_name or session.get('user_name') or '' }}"
-                                       required>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Phone Number</label>
-                                <input type="text"
-                                       class="form-control"
-                                       name="phone"
-                                       placeholder="9876543210"
-                                       required>
-                            </div>
-
-                        </div>
-
-                        <div class="mb-3">
-
-                            <label class="form-label">
-                                House / Flat No.
-                            </label>
-
-                            <input type="text"
-                                   class="form-control"
-                                   name="house"
-                                   placeholder="Flat No. / House No.">
-
-                        </div>
-
-                        <div class="mb-3">
-
-                            <label class="form-label">
-                                Street / Area / Full Address
-                            </label>
-
-                            <textarea
-                                    class="form-control"
-                                    rows="3"
-                                    name="street"
-                                    placeholder="Street, Area, Landmark"
-                                    required>{{ user_address or '' }}</textarea>
-
-                        </div>
-
-                        <div class="row">
-
-                            <div class="col-md-4 mb-3">
-
-                                <label class="form-label">
-                                    City
-                                </label>
-
-                                <input type="text"
-                                       class="form-control"
-                                       name="city"
-                                       placeholder="City">
-
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-
-                                <label class="form-label">
-                                    State
-                                </label>
-
-                                <input type="text"
-                                       class="form-control"
-                                       name="state"
-                                       placeholder="State">
-
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-
-                                <label class="form-label">
-                                    Pincode
-                                </label>
-
-                                <input type="text"
-                                       class="form-control"
-                                       name="pincode"
-                                       placeholder="Pincode">
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
+        <!-- Progress Stepper Header -->
+        <div class="checkout-glass-panel p-3 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="step-badge bg-primary text-white">1</span>
+                    <span class="fw-bold text-white">Delivery Address</span>
                 </div>
-
-                <!-- Payment -->
-                <div class="card shadow-sm border-0 rounded-4">
-
-                    <div class="card-body p-4">
-
-                        <h4 class="fw-bold mb-4">
-                            <i class="bi bi-wallet2 text-success"></i>
-                            Payment Method
-                        </h4>
-
-                        <div class="form-check mb-3">
-
-                            <input class="form-check-input"
-                                   type="radio"
-                                   name="payment"
-                                   value="COD"
-                                   checked>
-
-                            <label class="form-check-label">
-                                Cash on Delivery
-                            </label>
-
-                        </div>
-
-                        <div class="form-check mb-3">
-
-                            <input class="form-check-input"
-                                   type="radio"
-                                   name="payment"
-                                   value="UPI">
-
-                            <label class="form-check-label">
-                                UPI Payment
-                            </label>
-
-                        </div>
-
-                        <div class="form-check mb-3">
-
-                            <input class="form-check-input"
-                                   type="radio"
-                                   name="payment"
-                                   value="CARD">
-
-                            <label class="form-check-label">
-                                Credit / Debit Card
-                            </label>
-
-                        </div>
-
-                    </div>
-
+                <i class="bi bi-chevron-right text-white-50 small"></i>
+                <div class="d-flex align-items-center gap-2 text-white-50">
+                    <span class="step-badge bg-dark border border-secondary text-white-50">2</span>
+                    <span>Payment Selection</span>
                 </div>
-
             </div>
+            <div class="d-flex align-items-center gap-2 text-white-50 small">
+                <i class="bi bi-shield-check text-success fs-5"></i>
+                <span>SSL Encrypted Checkout</span>
+            </div>
+        </div>
 
-            <!-- RIGHT SIDE -->
-            <div class="col-lg-4">
+        <form id="checkoutForm" action="{{ url_for('razorpay_payment_page') }}" method="POST">
 
-                <div class="card shadow border-0 rounded-4 sticky-top">
+            <div class="row g-4">
 
-                    <div class="card-body p-4">
+                <!-- LEFT SIDE: ADDRESS & PAYMENT METHOD SELECTION -->
+                <div class="col-lg-8">
 
-                        <h4 class="fw-bold mb-4">
-                            Order Summary
-                        </h4>
-
-                        <div id="checkout-items-list">
-                            <!-- Populated by JS -->
-                        </div>
-
-                        <hr>
-
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Subtotal</span>
-                            <strong id="checkout-subtotal">₹0</strong>
-                        </div>
-
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Delivery Charges</span>
-                            <span class="text-success fw-bold">
-                                FREE
+                    <!-- Delivery Address Card -->
+                    <div class="checkout-glass-panel p-4 p-md-5 mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="fw-bold text-white mb-0">
+                                <i class="bi bi-geo-alt-fill text-danger me-2"></i>Delivery Address
+                            </h4>
+                            <span class="badge bg-secondary bg-opacity-25 text-white-50 border border-secondary border-opacity-25 px-2 py-1 small">
+                                Step 1 of 2
                             </span>
                         </div>
 
-                        <div class="d-flex justify-content-between mb-4">
-                            <span>Discount</span>
-                            <span>₹0</span>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-white-50 small fw-semibold text-uppercase">Full Name</label>
+                                <input type="text" class="form-control checkout-input" name="fullname" placeholder="Full legal name" value="{{ user_name or session.get('user_name') or '' }}" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label text-white-50 small fw-semibold text-uppercase">Phone Contact</label>
+                                <input type="tel" class="form-control checkout-input" name="phone" placeholder="10-digit mobile number" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label text-white-50 small fw-semibold text-uppercase">House / Flat / Building No.</label>
+                                <input type="text" class="form-control checkout-input" name="house" placeholder="e.g. Flat 402, Lotus Tower">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label text-white-50 small fw-semibold text-uppercase">Street / Area / Landmark</label>
+                                <input type="text" class="form-control checkout-input" name="street" placeholder="e.g. MG Road, Near City Mall" value="{{ user_address or '' }}" required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label text-white-50 small fw-semibold text-uppercase">City</label>
+                                <input type="text" class="form-control checkout-input" name="city" placeholder="City name" required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label text-white-50 small fw-semibold text-uppercase">State</label>
+                                <input type="text" class="form-control checkout-input" name="state" placeholder="State" required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label text-white-50 small fw-semibold text-uppercase">Pincode / Postal Code</label>
+                                <input type="text" class="form-control checkout-input" name="pincode" placeholder="e.g. 110001" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Method Selection -->
+                    <div class="checkout-glass-panel p-4 p-md-5">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="fw-bold text-white mb-0">
+                                <i class="bi bi-wallet2 text-success me-2"></i>Select Payment Method
+                            </h4>
+                            <span class="badge bg-primary bg-opacity-25 text-info border border-primary border-opacity-25 px-2 py-1 small">
+                                Instant & Guaranteed
+                            </span>
                         </div>
 
-                        <div class="input-group mb-4">
-
-                            <input type="text"
-                                   class="form-control"
-                                   placeholder="Coupon Code">
-
-                            <button class="btn btn-outline-primary"
-                                    type="button">
-                                Apply
-                            </button>
-
+                        <!-- Razorpay Online Gateway Card -->
+                        <div class="payment-selection-card active-selection p-3 p-md-4 mb-3 border" style="background: rgba(99, 102, 241, 0.18); border-color: #818cf8 !important;" onclick="selectPaymentRadio('paymentRazorpay')">
+                            <div class="d-flex align-items-start gap-3">
+                                <input class="form-check-input mt-1" type="radio" name="payment" id="paymentRazorpay" value="RAZORPAY" checked>
+                                <div class="w-100">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                        <div>
+                                            <h6 class="fw-bold text-white mb-1 d-flex align-items-center gap-2">
+                                                <i class="bi bi-lightning-charge-fill text-warning"></i>
+                                                <span>Online Payment Gateway (Cards, UPI, NetBanking, Wallets)</span>
+                                                <span class="badge bg-primary bg-opacity-25 text-info border border-primary border-opacity-25 small">Fastest</span>
+                                            </h6>
+                                            <p class="text-white-50 small mb-0">
+                                                Instant 3D-Secure processing via UPI Apps (GPay, PhonePe, Paytm, QR), Credit/Debit Cards, 50+ Banks, or Razorpay Modal.
+                                            </p>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-1">
+                                            <span class="badge bg-dark border border-secondary text-info px-2 py-1 small">
+                                                <i class="bi bi-shield-check text-success me-1"></i> RBI Protected
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <hr>
-
-                        <div class="d-flex justify-content-between">
-
-                            <h5>Total</h5>
-
-                            <h5 class="text-primary fw-bold" id="checkout-total">
-                                ₹0
-                            </h5>
-
-                        </div>
-
-                        <button class="btn btn-primary w-100 mt-4 py-3 rounded-pill" id="place-order-btn">
-
-                            <i class="bi bi-bag-check-fill"></i>
-
-                            Place Order
-
-                        </button>
-
-                        <div class="text-center mt-3">
-
-                            <small class="text-muted">
-
-                                <i class="bi bi-shield-check text-success"></i>
-
-                                100% Secure Payment
-
-                            </small>
-
+                        <!-- Cash on Delivery (COD) Card -->
+                        <div class="payment-selection-card p-3 p-md-4 border" style="background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.1) !important;" onclick="selectPaymentRadio('paymentCOD')">
+                            <div class="d-flex align-items-start gap-3">
+                                <input class="form-check-input mt-1" type="radio" name="payment" id="paymentCOD" value="COD">
+                                <div class="w-100">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                        <div>
+                                            <h6 class="fw-bold text-white mb-1 d-flex align-items-center gap-2">
+                                                <i class="bi bi-cash-stack text-success"></i>
+                                                <span>Cash on Delivery (Pay on Delivery)</span>
+                                            </h6>
+                                            <p class="text-white-50 small mb-0">
+                                                Pay cash or UPI directly to the courier partner upon physical package delivery at your doorstep.
+                                            </p>
+                                        </div>
+                                        <i class="bi bi-truck text-white-50 fs-4"></i>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                     </div>
 
                 </div>
 
+                <!-- RIGHT SIDE: ORDER SUMMARY -->
+                <div class="col-lg-4">
+                    <div class="checkout-glass-panel p-4 sticky-top" style="top: 100px;">
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-white mb-0">Order Summary</h5>
+                            <span class="badge bg-primary bg-opacity-25 text-info border border-primary border-opacity-25 px-2 py-1 small">Cart Review</span>
+                        </div>
+
+                        <div id="checkout-items-list" class="pe-1 mb-3" style="max-height: 240px; overflow-y: auto;">
+                            <!-- Dynamically populated by cart.js -->
+                        </div>
+
+                        <hr style="border-color: rgba(255, 255, 255, 0.1);">
+
+                        <div class="d-flex justify-content-between mb-2 text-white-50 small">
+                            <span>Subtotal</span>
+                            <strong class="text-white" id="checkout-subtotal">₹0.00</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2 text-white-50 small">
+                            <span>Courier Shipping</span>
+                            <span class="text-success fw-bold">FREE</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3 text-white-50 small">
+                            <span>GST / Taxes</span>
+                            <span class="text-white">Included</span>
+                        </div>
+
+                        <div class="p-3 rounded-4 mb-4 d-flex justify-content-between align-items-center" style="background: rgba(99, 102, 241, 0.18); border: 1.5px solid rgba(99, 102, 241, 0.45);">
+                            <div>
+                                <span class="text-white-50 small d-block">Payable Total</span>
+                                <h4 class="fw-bold text-white mb-0" id="checkout-total">₹0.00</h4>
+                            </div>
+                            <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 px-2 py-1">
+                                Verified
+                            </span>
+                        </div>
+
+                        <!-- Main Submit Button with Explicit Inline High-Contrast Styling -->
+                        <button class="btn btn-pay-action w-100 py-3 shadow-lg" 
+                                id="place-order-btn" 
+                                type="submit"
+                                style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #3730a3 100%) !important; color: #ffffff !important; border: 1.5px solid rgba(255,255,255,0.4) !important; box-shadow: 0 10px 30px rgba(79, 70, 229, 0.7) !important;">
+                            <i class="bi bi-lightning-charge-fill text-warning me-2 fs-5"></i>
+                            <span class="text-white fw-bold fs-6">Proceed to Payment Gateway</span>
+                        </button>
+
+                        <div class="text-center mt-3 text-white-50 small">
+                            <i class="bi bi-shield-lock-fill text-success me-1"></i> 256-Bit SSL Encrypted Transaction
+                        </div>
+
+                    </div>
+                </div>
+
             </div>
 
-        </div>
+        </form>
 
-    </form>
-
+    </div>
 </div>
 
+<script>
+function selectPaymentRadio(radioId) {
+    const radio = document.getElementById(radioId);
+    if (radio) {
+        radio.checked = true;
+        updatePaymentSelectionStyle();
+    }
+}
+
+function updatePaymentSelectionStyle() {
+    const form = document.getElementById('checkoutForm');
+    const placeOrderBtn = document.getElementById('place-order-btn');
+    const selected = document.querySelector('input[name="payment"]:checked')?.value || 'RAZORPAY';
+
+    document.querySelectorAll('.payment-selection-card').forEach(card => {
+        const r = card.querySelector('input[type="radio"]');
+        if (r && r.checked) {
+            card.classList.add('active-selection');
+            card.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(139, 92, 246, 0.18) 100%)';
+            card.style.borderColor = '#818cf8';
+        } else {
+            card.classList.remove('active-selection');
+            card.style.background = 'rgba(255, 255, 255, 0.03)';
+            card.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        }
+    });
+
+    if (selected === 'RAZORPAY') {
+        if (form) form.action = "{{ url_for('razorpay_payment_page') }}";
+        if (placeOrderBtn) {
+            placeOrderBtn.className = 'btn btn-pay-action w-100 py-3 shadow-lg';
+            placeOrderBtn.style.cssText = 'background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #3730a3 100%) !important; color: #ffffff !important; border: 1.5px solid rgba(255,255,255,0.4) !important; box-shadow: 0 10px 30px rgba(79, 70, 229, 0.7) !important; display: flex !important; align-items: center !important; justify-content: center !important;';
+            placeOrderBtn.innerHTML = '<i class="bi bi-lightning-charge-fill text-warning me-2 fs-5"></i><span class="text-white fw-bold fs-6">Proceed to Payment Gateway</span>';
+        }
+    } else {
+        if (form) form.action = "{{ url_for('place_order') }}";
+        if (placeOrderBtn) {
+            placeOrderBtn.className = 'btn btn-cod-action w-100 py-3 shadow-lg';
+            placeOrderBtn.style.cssText = 'background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important; color: #ffffff !important; border: 1.5px solid rgba(255,255,255,0.4) !important; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.7) !important; display: flex !important; align-items: center !important; justify-content: center !important;';
+            placeOrderBtn.innerHTML = '<i class="bi bi-bag-check-fill text-white me-2 fs-5"></i><span class="text-white fw-bold fs-6">Confirm Order (Cash on Delivery)</span>';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('input[name="payment"]').forEach(r => {
+        r.addEventListener('change', updatePaymentSelectionStyle);
+    });
+    updatePaymentSelectionStyle();
+});
+</script>
 {% endblock %}

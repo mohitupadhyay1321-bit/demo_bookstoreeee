@@ -445,39 +445,57 @@ function renderCheckoutPage() {
     const cart = getCart();
 
     if (cart.length === 0) {
-        itemsContainer.innerHTML = `<div class="text-danger fw-bold py-2">Your cart is empty. Cannot checkout.</div>`;
-        if (submitBtn) submitBtn.disabled = true;
+        itemsContainer.innerHTML = `<div class="text-danger fw-bold py-2"><i class="bi bi-exclamation-triangle-fill me-1"></i> Your cart is empty. Please add items before checking out.</div>`;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.5';
+            submitBtn.style.cursor = 'not-allowed';
+        }
         return;
+    } else {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+        }
     }
 
     let html = '';
     let total = 0;
 
     cart.forEach(item => {
-        const itemTotal = item.price * item.quantity;
+        const itemTotal = Number(item.price) * Number(item.quantity);
         total += itemTotal;
+        const imgHtml = item.img ? `<img src="${item.img}" alt="${item.title}" style="width: 34px; height: 46px; object-fit: cover; border-radius: 6px;" class="me-2 shadow-sm">` : `<div style="width: 34px; height: 46px; border-radius: 6px;" class="bg-dark text-muted d-flex align-items-center justify-content-center me-2"><i class="bi bi-book"></i></div>`;
         html += `
-            <div class="d-flex justify-content-between mb-2">
-                <span>${item.title} <span class="text-muted">x${item.quantity}</span></span>
-                <strong>₹${itemTotal}</strong>
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-secondary border-opacity-10">
+                <div class="d-flex align-items-center overflow-hidden">
+                    ${imgHtml}
+                    <div class="text-truncate">
+                        <div class="text-white small text-truncate" style="max-width: 150px;" title="${item.title}">${item.title}</div>
+                        <span class="text-white-50" style="font-size: 0.72rem;">Qty: ${item.quantity} × ₹${item.price}</span>
+                    </div>
+                </div>
+                <strong class="text-white small ms-2">₹${itemTotal.toFixed(2)}</strong>
             </div>
         `;
     });
 
     itemsContainer.innerHTML = html;
-    if (subtotalEl) subtotalEl.textContent = `₹${total}`;
-    if (totalEl) totalEl.textContent = `₹${total}`;
+    if (subtotalEl) subtotalEl.textContent = `₹${total.toFixed(2)}`;
+    if (totalEl) totalEl.textContent = `₹${total.toFixed(2)}`;
 
-    // Store total in localStorage temporarily on form submit to display it in orders.html
+    // Store total in localStorage temporarily on form submit for COD orders
     const form = document.querySelector('form');
     if (form) {
-        form.addEventListener('submit', () => {
-            localStorage.setItem('bookbazar_last_order_total', total);
+        form.addEventListener('submit', (e) => {
             const selectedPayment = document.querySelector('input[name="payment"]:checked')?.value || 'COD';
-            let paymentText = 'Cash on Delivery';
-            if (selectedPayment === 'UPI') paymentText = 'UPI';
-            if (selectedPayment === 'CARD') paymentText = 'Credit / Debit Card';
-            localStorage.setItem('bookbazar_last_payment_method', paymentText);
+            if (selectedPayment === 'RAZORPAY') {
+                // Razorpay handler will handle verification and localStorage cleanup
+                return;
+            }
+            localStorage.setItem('bookbazar_last_order_total', total.toFixed(2));
+            localStorage.setItem('bookbazar_last_payment_method', 'Cash on Delivery');
 
             const randomOrderId = '#ORD-' + Math.floor(1000 + Math.random() * 9000);
             localStorage.setItem('bookbazar_last_order_id', randomOrderId);
@@ -510,6 +528,7 @@ function renderOrderConfirmedPage() {
 }
 
 window.currentCategoryFilter = 'all';
+window.currentSearchQuery = '';
 
 function renderBooksPage() {
     const container = document.getElementById('books-grid');
@@ -519,8 +538,14 @@ function renderBooksPage() {
     const activeFilterBtn = document.querySelector('.filter-btn.active');
     const filter = activeFilterBtn ? activeFilterBtn.getAttribute('data-filter') : 'all';
     const categoryFilter = window.currentCategoryFilter || 'all';
+    const searchQuery = (window.currentSearchQuery || '').trim().toLowerCase();
+
+    const countBadge = document.getElementById('books-count-badge');
 
     let html = '';
+    let matchCount = 0;
+    const totalApproved = catalog.filter(item => item.approved !== false).length;
+
     catalog.forEach(item => {
         // Skip unapproved books in public shop
         if (item.approved === false) {
@@ -537,6 +562,20 @@ function renderBooksPage() {
             return;
         }
 
+        // Filter by search query (title, author, category, or description)
+        if (searchQuery) {
+            const titleMatch = (item.title || '').toLowerCase().includes(searchQuery);
+            const authorMatch = (item.author || '').toLowerCase().includes(searchQuery);
+            const categoryMatch = (item.category || '').toLowerCase().includes(searchQuery);
+            const descMatch = (item.description || '').toLowerCase().includes(searchQuery);
+
+            if (!titleMatch && !authorMatch && !categoryMatch && !descMatch) {
+                return;
+            }
+        }
+
+        matchCount++;
+
         const isNew = item.condition === 'new';
         const badgeClass = isNew ? 'bg-success' : 'bg-purple';
         const badgeStyle = isNew ? '' : 'style="background-color: #a855f7;"';
@@ -546,9 +585,13 @@ function renderBooksPage() {
             <div class="col-md-3 book-item-col" data-condition="${item.condition}">
                 <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative" style="${isNew ? '' : 'background: #111114;'}">
                     <span class="position-absolute top-0 start-0 m-3 badge ${badgeClass} text-white px-3 py-2 rounded-pill" ${badgeStyle}>${badgeText}</span>
-                    <img src="${item.img || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300'}" class="card-img-top" alt="${item.title}" style="height: 300px; object-fit: cover;">
+                    <a href="/book/${item.id}">
+                        <img src="${item.img || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300'}" class="card-img-top" alt="${item.title}" style="height: 300px; object-fit: cover; cursor: pointer;">
+                    </a>
                     <div class="card-body p-4 d-flex flex-column">
-                        <h5 class="fw-bold mb-1 text-white">${item.title}</h5>
+                        <h5 class="fw-bold mb-1 text-white">
+                            <a href="/book/${item.id}" class="text-white text-decoration-none">${item.title}</a>
+                        </h5>
                         <p class="text-muted small mb-3">${item.author}</p>
                         <div class="d-flex justify-content-between align-items-center mt-auto">
                             <span class="fs-5 fw-bold text-primary">₹${item.price}</span>
@@ -560,7 +603,62 @@ function renderBooksPage() {
         `;
     });
 
+    if (countBadge) {
+        if (searchQuery || categoryFilter !== 'all' || filter !== 'all') {
+            countBadge.textContent = `Found ${matchCount} of ${totalApproved} books`;
+        } else {
+            countBadge.textContent = `${totalApproved} Books Available`;
+        }
+    }
+
+    if (matchCount === 0) {
+        html = `
+            <div class="col-12 py-5 text-center">
+                <div class="p-5 rounded-4 border border-secondary border-opacity-25" style="background: rgba(15, 23, 42, 0.6);">
+                    <i class="bi bi-search text-warning fs-1 d-block mb-3"></i>
+                    <h4 class="fw-bold text-white mb-2">No books found</h4>
+                    <p class="text-white-50 mb-4">
+                        ${searchQuery ? `We couldn't find any books matching "<strong>${searchQuery}</strong>".` : 'No books matching the selected filters.'}
+                    </p>
+                    <button class="btn btn-primary rounded-pill px-4 py-2" onclick="resetBookFilters()">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Search & Filters
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
     container.innerHTML = html;
+}
+
+function resetBookFilters() {
+    window.currentSearchQuery = '';
+    window.currentCategoryFilter = 'all';
+    const searchInput = document.getElementById('book-search-input');
+    const clearBtn = document.getElementById('clear-search-btn');
+    const categoryText = document.getElementById('current-category');
+
+    if (searchInput) searchInput.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
+    if (categoryText) categoryText.textContent = 'All Categories';
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-filter') === 'all') {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    document.querySelectorAll('.category-filter-item').forEach(item => {
+        if (item.getAttribute('data-category') === 'all') {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+
+    renderBooksPage();
 }
 
 function resizeAndConvertImage(file, callback) {

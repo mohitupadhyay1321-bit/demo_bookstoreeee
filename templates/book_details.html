@@ -1,9 +1,9 @@
 {% extends 'layouts/user_base.html' if session.get('user') == 'User' else 'base.html' %}
 
-{% block title %}Book Details | BookBazar{% endblock %}
+{% block title %}{{ book.title if book else 'Book Details' }} | BookBazar{% endblock %}
 
 {% block content %}
-{# Set mapping details for books 1 to 8 #}
+{# Set fallback mapping details for books 1 to 8 #}
 {% set title_map = {1: "Atomic Habits", 2: "Deep Work", 3: "Rich Dad Poor Dad", 4: "The Psychology of Money", 5: "The Alchemist", 6: "Zero to One", 7: "Thinking, Fast and Slow", 8: "Steve Jobs"} %}
 {% set price_map = {1: 499, 2: 399, 3: 299, 4: 599, 5: 149, 6: 199, 7: 249, 8: 299} %}
 {% set author_map = {1: "James Clear", 2: "Cal Newport", 3: "Robert Kiyosaki", 4: "Morgan Housel", 5: "Paulo Coelho", 6: "Peter Thiel", 7: "Daniel Kahneman", 8: "Walter Isaacson"} %}
@@ -18,36 +18,51 @@
     8: "https://images.unsplash.com/photo-1541963463532-d68292c34b19?w=300"
 } %}
 
-{# Hidden trigger for JavaScript dynamic loader for user-created book IDs #}
-{% if id > 8 %}
+{% set cur_title = book.title if book else title_map.get(id, 'Book Details') %}
+{% set cur_author = book.author if book else author_map.get(id, 'Author') %}
+{% set cur_price = book.price if book else price_map.get(id, 0) %}
+{% set cur_img = book.cover_image or book.image_url if (book and (book.cover_image or book.image_url)) else img_map.get(id, 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300') %}
+{% set cur_desc = book.description if (book and book.description) else '' %}
+{% set cur_cond = book.condition_type if (book and book.condition_type) else ('Pre-Loved' if id >= 5 else 'New') %}
+
+{# Hidden trigger for JavaScript dynamic loader for client-created books #}
 <div id="dynamic-book-details-anchor"></div>
 <script>
     window.currentBookId = {{ id }};
 </script>
-{% endif %}
 
 <div class="container py-5" style="margin-top: 100px;">
     <div class="row g-5">
         <!-- Book Image -->
         <div class="col-md-5">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-                <img src="{{ img_map.get(id, '') }}" class="img-fluid" id="detail-image" alt="{{ title_map.get(id, '') }}" style="max-height: 500px; object-fit: cover; width: 100%;">
+            <div class="card border-0 shadow rounded-4 overflow-hidden" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.1) !important;">
+                <img src="{{ cur_img }}" class="img-fluid" id="detail-image" alt="{{ cur_title }}" style="max-height: 500px; object-fit: cover; width: 100%;">
             </div>
         </div>
         
         <!-- Book Details -->
         <div class="col-md-7">
-            <h1 class="fw-bold mb-2" id="detail-title">{{ title_map.get(id, '') }}</h1>
-            <h4 class="text-muted mb-4" id="detail-author">{{ author_map.get(id, '') }}</h4>
-            <div class="fs-3 fw-bold text-primary mb-4" id="detail-price">₹{{ price_map.get(id, '') }}</div>
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('home') }}" class="text-info text-decoration-none">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('books') }}" class="text-info text-decoration-none">Books</a></li>
+                    <li class="breadcrumb-item active text-white-50" aria-current="page">{{ cur_title }}</li>
+                </ol>
+            </nav>
+
+            <h1 class="fw-bold mb-2 text-white" id="detail-title">{{ cur_title }}</h1>
+            <h4 class="text-white-50 mb-4" id="detail-author">{{ cur_author }}</h4>
+            <div class="fs-2 fw-bold text-primary mb-4" id="detail-price">₹{{ cur_price }}</div>
             
-            <p class="lead text-muted mb-4" id="detail-description">
-                {% if id == 1 %}
-                    An easy & proven way to build good habits & break bad ones. Tiny Changes, Remarkable Results.
+            <p class="lead text-white-50 mb-4" id="detail-description" style="line-height: 1.7;">
+                {% if cur_desc %}
+                    {{ cur_desc }}
+                {% elif id == 1 %}
+                    An easy & proven way to build good habits & break bad ones. Tiny Changes, Remarkable Results. Learn how tiny changes can grow into life-altering outcomes.
                 {% elif id == 2 %}
-                    Rules for Focused Success in a Distracted World. Master difficult skills quickly and produce better results in less time.
+                    Rules for Focused Success in a Distracted World. Master difficult skills quickly and produce better results in less time with deep uninterrupted concentration.
                 {% elif id == 3 %}
-                    What the Rich Teach Their Kids About Money That the Poor and Middle Class Do Not!
+                    What the Rich Teach Their Kids About Money That the Poor and Middle Class Do Not! Transform your financial mindset and achieve true wealth freedom.
                 {% elif id == 4 %}
                     Timeless lessons on wealth, greed, and happiness. Doing well with money isn't necessarily about what you know. It's about how you behave.
                 {% elif id == 5 %}
@@ -58,51 +73,57 @@
                     A deep exploration of the two systems that drive our way of thinking: System 1 (fast/intuitive) and System 2 (slow/logical).
                 {% elif id == 8 %}
                     The exclusive biography of the creative entrepreneur who revolutionized the technology industry. Based on more than forty interviews.
+                {% else %}
+                    Explore this captivating book from our curated marketplace. Enjoy an enriching reading journey.
                 {% endif %}
             </p>
             
-            <div class="d-flex gap-3 mb-5">
+            <div class="d-flex gap-3 mb-5 flex-wrap">
                 {% if session.get('user') %}
-                <a href="#" class="btn btn-primary btn-lg rounded-pill px-5 add-to-cart-btn" 
+                <a href="#" class="btn btn-primary btn-lg rounded-pill px-5 py-3 fw-bold add-to-cart-btn shadow" 
                    data-id="{{ id }}"
-                   data-title="{{ title_map.get(id, '') }}"
-                   data-price="{{ price_map.get(id, '') }}"
-                   data-img="{{ img_map.get(id, '') }}"
-                   data-author="{{ author_map.get(id, '') }}">
-                   Add to Cart
+                   data-title="{{ cur_title }}"
+                   data-price="{{ cur_price }}"
+                   data-img="{{ cur_img }}"
+                   data-author="{{ cur_author }}"
+                   style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important; color: #ffffff !important;">
+                   <i class="bi bi-cart-plus-fill me-2"></i> Add to Cart
                 </a>
-                <a href="#" class="btn btn-outline-secondary btn-lg rounded-pill px-4 add-to-wishlist-btn"
+                <a href="#" class="btn btn-outline-light btn-lg rounded-pill px-4 py-3 add-to-wishlist-btn"
                    data-id="{{ id }}"
-                   data-title="{{ title_map.get(id, '') }}"
-                   data-price="{{ price_map.get(id, '') }}"
-                   data-img="{{ img_map.get(id, '') }}"
-                   data-author="{{ author_map.get(id, '') }}">
-                    <i class="bi bi-heart"></i>
+                   data-title="{{ cur_title }}"
+                   data-price="{{ cur_price }}"
+                   data-img="{{ cur_img }}"
+                   data-author="{{ cur_author }}"
+                   title="Add to Wishlist">
+                    <i class="bi bi-heart text-danger"></i>
                 </a>
                 {% else %}
-                <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg rounded-pill px-5">
-                   Login to Buy
+                <a href="{{ url_for('login', next=url_for('book_details', id=id)) }}" 
+                   class="btn btn-primary btn-lg rounded-pill px-5 py-3 fw-bold shadow"
+                   style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important; color: #ffffff !important; font-size: 1.1rem !important;">
+                   <i class="bi bi-box-arrow-in-right me-2"></i> Login to Buy
                 </a>
-                <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg rounded-pill px-4">
-                    <i class="bi bi-heart"></i>
+                <a href="{{ url_for('login', next=url_for('book_details', id=id)) }}" class="btn btn-outline-light btn-lg rounded-pill px-4 py-3" title="Login to Wishlist">
+                    <i class="bi bi-heart text-danger"></i>
                 </a>
                 {% endif %}
             </div>
             
-            <hr class="my-5">
+            <hr class="my-4" style="border-color: rgba(255, 255, 255, 0.15);">
             
-            <div class="row text-center text-md-start">
-                <div class="col-md-4 mb-3">
-                    <div class="small text-muted">Condition</div>
-                    <div class="fw-bold fs-5" id="detail-condition">{% if id >= 5 %}Pre-Loved{% else %}New{% endif %}</div>
+            <div class="row text-center text-md-start g-3">
+                <div class="col-md-4">
+                    <div class="small text-white-50 text-uppercase fw-semibold">Condition</div>
+                    <div class="fw-bold fs-5 text-white" id="detail-condition">{{ cur_cond }}</div>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <div class="small text-muted">Availability</div>
-                    <div class="fw-bold fs-5 text-success">In Stock</div>
+                <div class="col-md-4">
+                    <div class="small text-white-50 text-uppercase fw-semibold">Availability</div>
+                    <div class="fw-bold fs-5 text-success"><i class="bi bi-check-circle-fill me-1"></i> In Stock</div>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <div class="small text-muted">Shipping</div>
-                    <div class="fw-bold fs-5">Free Delivery</div>
+                <div class="col-md-4">
+                    <div class="small text-white-50 text-uppercase fw-semibold">Shipping</div>
+                    <div class="fw-bold fs-5 text-info"><i class="bi bi-truck me-1"></i> Free Delivery</div>
                 </div>
             </div>
         </div>

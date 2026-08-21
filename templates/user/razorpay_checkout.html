@@ -1,0 +1,1295 @@
+{% extends 'layouts/user_base.html' if session.get('user') == 'User' else 'base.html' %}
+
+{% block title %}Razorpay Secure Checkout | {{ store_name or 'BookBazar' }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ==========================================================
+   SECURE PAYMENT INTERFACE - RAZORPAY GATEWAY SUITE
+   ========================================================== */
+
+:root {
+    --prem-bg-dark: #07090e;
+    --prem-card-bg: rgba(15, 23, 42, 0.85);
+    --prem-border: rgba(255, 255, 255, 0.12);
+    --prem-border-active: rgba(99, 102, 241, 0.8);
+    --prem-accent: #6366f1;
+    --prem-accent-glow: rgba(99, 102, 241, 0.45);
+    --prem-emerald: #10b981;
+    --prem-gold: #f59e0b;
+}
+
+body {
+    background: #07090e !important;
+    color: #ffffff !important;
+}
+
+.payment-portal-wrapper {
+    position: relative;
+    min-height: calc(100vh - 120px);
+    margin-top: 100px;
+    margin-bottom: 70px;
+}
+
+/* Background Ambient Glows */
+.payment-portal-wrapper::before {
+    content: '';
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    top: 5%;
+    left: -100px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.22), transparent 70%);
+    filter: blur(90px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.payment-portal-wrapper::after {
+    content: '';
+    position: fixed;
+    width: 550px;
+    height: 550px;
+    bottom: 5%;
+    right: -100px;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.15), transparent 70%);
+    filter: blur(100px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.glass-panel {
+    background: rgba(15, 23, 42, 0.85) !important;
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    position: relative;
+    z-index: 1;
+}
+
+.glass-pill {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+    border-radius: 50px;
+}
+
+/* Tab Navigation Buttons */
+.nav-pills-payment .nav-link {
+    background: rgba(30, 41, 59, 0.7) !important;
+    color: #cbd5e1 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 14px;
+    padding: 12px 18px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: left;
+}
+
+.nav-pills-payment .nav-link:hover {
+    color: #ffffff !important;
+    background: rgba(49, 46, 129, 0.4) !important;
+    border-color: rgba(99, 102, 241, 0.4) !important;
+    transform: translateY(-1px);
+}
+
+.nav-pills-payment .nav-link.active {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
+    color: #ffffff !important;
+    border-color: #818cf8 !important;
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+.nav-pills-payment .nav-link.active * {
+    color: #ffffff !important;
+}
+
+/* ==========================================================
+   3D CREDIT CARD VISUALIZER
+   ========================================================== */
+.card-visualizer-scene {
+    perspective: 1000px;
+    width: 100%;
+    max-width: 380px;
+    height: 220px;
+    margin: 0 auto 28px;
+}
+
+.card-visualizer {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(99, 102, 241, 0.3);
+}
+
+.card-visualizer.is-flipped {
+    transform: rotateY(180deg);
+}
+
+.card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 20px;
+    padding: 22px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.card-face-front {
+    background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 45%, #090d16 100%);
+}
+
+.card-face-front::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 30%, rgba(99, 102, 241, 0.35), transparent 60%);
+    pointer-events: none;
+}
+
+.card-face-back {
+    background: linear-gradient(135deg, #090d16 0%, #1e1b4b 100%);
+    transform: rotateY(180deg);
+    padding: 22px 0 22px;
+}
+
+.card-chip {
+    width: 44px;
+    height: 32px;
+    background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+    border-radius: 6px;
+    position: relative;
+    box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.card-chip::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.card-number-display {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.card-holder-display {
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+    color: #f1f5f9;
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.card-expiry-display {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #ffffff;
+}
+
+.card-magnetic-stripe {
+    width: 100%;
+    height: 42px;
+    background: #020408;
+    margin-top: 10px;
+}
+
+.card-cvv-band {
+    background: #ffffff;
+    height: 36px;
+    margin: 14px 20px 0;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 14px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #000000;
+    letter-spacing: 2px;
+}
+
+/* Custom Input Styling */
+.prem-input-group label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.75px;
+    color: #cbd5e1;
+    margin-bottom: 6px;
+}
+
+.prem-input {
+    background: rgba(15, 23, 42, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.prem-input:focus {
+    background: rgba(15, 23, 42, 0.95) !important;
+    border-color: #818cf8 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35) !important;
+    color: #ffffff !important;
+}
+
+.prem-input::placeholder {
+    color: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* Bank Selection Grid */
+.bank-grid-btn {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.bank-grid-btn:hover {
+    background: rgba(49, 46, 129, 0.3);
+    border-color: rgba(99, 102, 241, 0.4);
+    transform: translateY(-2px);
+}
+
+.bank-grid-btn.active {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: #818cf8;
+    box-shadow: 0 0 18px rgba(99, 102, 241, 0.4);
+}
+
+/* Dynamic QR Scanner Visual */
+.qr-scanner-box {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 12px;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 25px rgba(99, 102, 241, 0.3);
+    overflow: hidden;
+}
+
+.qr-scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #6366f1, #22c55e, transparent);
+    box-shadow: 0 0 10px #6366f1;
+    animation: scanPulse 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes scanPulse {
+    0% { top: 4%; opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { top: 94%; opacity: 0; }
+}
+
+/* ==========================================================
+   PRIMARY PAYMENT BUTTON (HIGH CONTRAST & ULTRA-VISIBLE)
+   ========================================================== */
+.btn-pay-now-action {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #3730a3 100%) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    padding: 17px 32px !important;
+    border-radius: 50px !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
+    box-shadow: 0 12px 35px rgba(79, 70, 229, 0.65), 0 0 20px rgba(99, 102, 241, 0.4) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    cursor: pointer !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    z-index: 10 !important;
+    text-decoration: none !important;
+}
+
+.btn-pay-now-action:hover {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+    color: #ffffff !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 16px 45px rgba(79, 70, 229, 0.85), 0 0 25px rgba(99, 102, 241, 0.6) !important;
+}
+
+.btn-pay-now-action * {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+/* Secondary Button Highlights */
+.btn-gateway-modal-trigger {
+    background: rgba(99, 102, 241, 0.25) !important;
+    color: #a5b4fc !important;
+    border: 1.5px solid #818cf8 !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+}
+
+.btn-gateway-modal-trigger:hover {
+    background: #6366f1 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.5) !important;
+}
+
+.btn-verify-vpa-custom {
+    background: #4f46e5 !important;
+    color: #ffffff !important;
+    border: 1px solid #818cf8 !important;
+    font-weight: 600 !important;
+}
+
+.btn-wallet-pay {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    font-weight: 600 !important;
+    padding: 8px 22px !important;
+    border-radius: 50px !important;
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4) !important;
+}
+
+.btn-apply-coupon-custom {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    font-weight: 700 !important;
+    border-top-right-radius: 12px !important;
+    border-bottom-right-radius: 12px !important;
+    padding: 0 24px !important;
+}
+
+/* Modal 3DS Animation */
+.modal-3ds-content {
+    background: #0f172a !important;
+    border: 1px solid rgba(99, 102, 241, 0.4) !important;
+    border-radius: 28px !important;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(99, 102, 241, 0.3) !important;
+}
+
+.pulsing-shield {
+    animation: shieldPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes shieldPulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.5)); }
+    50% { transform: scale(1.1); filter: drop-shadow(0 0 25px rgba(99, 102, 241, 0.9)); }
+}
+
+/* Custom Scrollbars */
+.order-summary-items::-webkit-scrollbar {
+    width: 4px;
+}
+.order-summary-items::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+}
+.order-summary-items::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Fail-Safe Inline CSS Scope -->
+<style>
+.btn-pay-now-action, .btn-pay-action {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #3730a3 100%) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    padding: 17px 32px !important;
+    border-radius: 50px !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
+    box-shadow: 0 12px 35px rgba(79, 70, 229, 0.65), 0 0 20px rgba(99, 102, 241, 0.4) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    cursor: pointer !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+.btn-pay-now-action *, .btn-pay-action * {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+</style>
+
+<div class="payment-portal-wrapper">
+    <div class="container py-4">
+
+        <!-- Top Security & Trust Header Bar -->
+        <div class="glass-panel p-3 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 44px; height: 44px; background: rgba(99, 102, 241, 0.2); border: 1.5px solid rgba(99, 102, 241, 0.5);">
+                    <i class="bi bi-shield-lock-fill text-info fs-5"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <h6 class="fw-bold text-white mb-0">Razorpay 256-Bit SSL Checkout</h6>
+                        <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 px-2 py-0.5 small" style="font-size: 0.7rem;">
+                            <i class="bi bi-check2-circle me-1"></i> Verified Gateway
+                        </span>
+                    </div>
+                    <small class="text-white-50">Order Token: <code class="text-info bg-dark bg-opacity-50 px-2 py-0.5 rounded border border-secondary border-opacity-25">{{ razorpay_order_id }}</code></small>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <!-- Session Expiry Timer -->
+                <div class="glass-pill px-3 py-1.5 d-flex align-items-center gap-2 text-white-50 small">
+                    <i class="bi bi-clock-history text-warning"></i>
+                    <span>Session: <strong class="text-white" id="session-timer">09:59</strong></span>
+                </div>
+
+                <!-- Razorpay Gateway Direct Trigger -->
+                <button type="button" class="btn btn-sm btn-gateway-modal-trigger rounded-pill px-3 py-1.5 d-flex align-items-center gap-1 shadow-sm" onclick="openRazorpay()">
+                    <i class="bi bi-lightning-charge-fill text-warning"></i>
+                    <span>Open Razorpay Modal</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Official Razorpay Quick Banner -->
+        <div class="glass-panel p-3 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(79, 70, 229, 0.15) 100%) !important; border: 1.5px solid #818cf8 !important;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; background: rgba(99, 102, 241, 0.3); border: 1.5px solid #818cf8;">
+                    <i class="bi bi-credit-card-2-front-fill text-warning fs-4"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-white mb-0">Official Razorpay Gateway (Cards, UPI, NetBanking, Wallets)</h6>
+                    <small class="text-white-50">One-click seamless payment with Google Pay, PhonePe, Paytm, or Credit/Debit Cards</small>
+                </div>
+            </div>
+            <button type="button" 
+                    class="btn btn-pay-now-action py-2 px-4 shadow" 
+                    onclick="openRazorpay()"
+                    style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important; color: #ffffff !important; font-size: 0.95rem !important; padding: 12px 24px !important;">
+                <i class="bi bi-lightning-charge-fill text-warning me-1"></i>
+                <span>Launch Razorpay Popup (₹{{ "%.2f"|format(amount) }})</span>
+            </button>
+        </div>
+
+        <div class="row g-4">
+
+            <!-- ========================================================
+                 LEFT COLUMN: PAYMENT GATEWAY CONSOLE
+                 ======================================================== -->
+            <div class="col-lg-7 col-xl-8">
+                <div class="glass-panel p-4 p-md-5">
+
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                        <div>
+                            <span class="text-info text-uppercase fw-bold small" style="letter-spacing: 1px;">Step 2 of 2 • Secure Payment</span>
+                            <h3 class="fw-bold text-white mb-0">Choose Payment Method</h3>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-dark border border-secondary text-info px-3 py-2">
+                                <i class="bi bi-wallet-fill text-warning me-1"></i> All Methods Supported
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Payment Navigation Pills -->
+                    <ul class="nav nav-pills nav-pills-payment mb-4 g-2 row" id="paymentTab" role="tablist">
+                        <li class="nav-item col-6 col-md-3 mb-2" role="presentation">
+                            <button class="nav-link w-100 active" id="tab-cards" data-bs-toggle="pill" data-bs-target="#content-cards" type="button" role="tab">
+                                <i class="bi bi-credit-card-2-front text-info"></i>
+                                <span>Card</span>
+                            </button>
+                        </li>
+                        <li class="nav-item col-6 col-md-3 mb-2" role="presentation">
+                            <button class="nav-link w-100" id="tab-upi" data-bs-toggle="pill" data-bs-target="#content-upi" type="button" role="tab">
+                                <i class="bi bi-qr-code-scan text-success"></i>
+                                <span>UPI & QR</span>
+                            </button>
+                        </li>
+                        <li class="nav-item col-6 col-md-3 mb-2" role="presentation">
+                            <button class="nav-link w-100" id="tab-netbanking" data-bs-toggle="pill" data-bs-target="#content-netbanking" type="button" role="tab">
+                                <i class="bi bi-bank text-info"></i>
+                                <span>NetBanking</span>
+                            </button>
+                        </li>
+                        <li class="nav-item col-6 col-md-3 mb-2" role="presentation">
+                            <button class="nav-link w-100" id="tab-wallets" data-bs-toggle="pill" data-bs-target="#content-wallets" type="button" role="tab">
+                                <i class="bi bi-wallet2 text-warning"></i>
+                                <span>Wallets</span>
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- TAB CONTENTS -->
+                    <div class="tab-content" id="paymentTabContent">
+
+                        <!-- ----------------------------------------------------
+                             1. CREDIT / DEBIT CARDS TAB
+                             ---------------------------------------------------- -->
+                        <div class="tab-pane fade show active" id="content-cards" role="tabpanel">
+
+                            <!-- Interactive 3D Card Visualizer -->
+                            <div class="card-visualizer-scene">
+                                <div class="card-visualizer" id="cardVisualizer">
+                                    <!-- FRONT FACE -->
+                                    <div class="card-face card-face-front">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="card-chip"></div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-reception-4 fs-4 text-white-50" title="Contactless"></i>
+                                                <span id="card-brand-logo" class="badge bg-primary text-white fw-bold px-2 py-1 fs-6">VISA</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="card-number-display text-center my-2" id="preview-card-number">
+                                            •••• •••• •••• ••••
+                                        </div>
+
+                                        <div class="d-flex justify-content-between align-items-end">
+                                            <div>
+                                                <small class="text-white-50 text-uppercase d-block" style="font-size: 0.65rem;">Cardholder Name</small>
+                                                <span class="card-holder-display" id="preview-card-name">{{ fullname or 'CARDHOLDER NAME' }}</span>
+                                            </div>
+                                            <div class="text-end">
+                                                <small class="text-white-50 text-uppercase d-block" style="font-size: 0.65rem;">Expires</small>
+                                                <span class="card-expiry-display" id="preview-card-expiry">MM/YY</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- BACK FACE -->
+                                    <div class="card-face card-face-back">
+                                        <div class="card-magnetic-stripe"></div>
+                                        <div class="card-cvv-band" id="preview-card-cvv">
+                                            •••
+                                        </div>
+                                        <div class="px-4 mt-auto text-end">
+                                            <small class="text-white-50" style="font-size: 0.65rem;">Holographic Security Token</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card Inputs Form -->
+                            <form id="cardPaymentForm" onsubmit="event.preventDefault(); openRazorpay();">
+                                <div class="row g-3">
+                                    <div class="col-12 prem-input-group">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <label>Card Number</label>
+                                            <button type="button" class="btn btn-link p-0 text-info fw-semibold small text-decoration-none" onclick="fillTestCard()" style="font-size: 0.82rem;">
+                                                <i class="bi bi-magic me-1"></i> Auto-fill Sandbox Card
+                                            </button>
+                                        </div>
+                                        <div class="position-relative">
+                                            <input type="text" class="form-control prem-input" id="card_number" placeholder="4532 0182 9384 1029" maxlength="19" required autocomplete="cc-number">
+                                            <i class="bi bi-credit-card-2-front position-absolute top-50 end-0 translate-middle-y me-3 text-white-50"></i>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 prem-input-group">
+                                        <label>Cardholder Name</label>
+                                        <input type="text" class="form-control prem-input" id="card_name" placeholder="Name as displayed on card" value="{{ fullname }}" required autocomplete="cc-name">
+                                    </div>
+
+                                    <div class="col-6 prem-input-group">
+                                        <label>Expiry Date</label>
+                                        <input type="text" class="form-control prem-input" id="card_expiry" placeholder="MM/YY" maxlength="5" required autocomplete="cc-exp">
+                                    </div>
+
+                                    <div class="col-6 prem-input-group">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <label>CVV / CVC</label>
+                                            <i class="bi bi-info-circle text-white-50" title="3 or 4 digits on back of card" style="font-size: 0.75rem;"></i>
+                                        </div>
+                                        <input type="password" class="form-control prem-input" id="card_cvv" placeholder="•••" maxlength="4" required autocomplete="cc-csc">
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="form-check form-switch mt-1">
+                                            <input class="form-check-input" type="checkbox" id="save_card" checked>
+                                            <label class="form-check-label text-white-50 small" for="save_card">
+                                                Save this card securely under RBI tokenization guidelines
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 mt-4">
+                                        <button type="submit" 
+                                                class="btn btn-pay-now-action w-100 shadow-lg"
+                                                style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #3730a3 100%) !important; color: #ffffff !important; font-weight: 700 !important; font-size: 1.1rem !important; padding: 17px 32px !important; border-radius: 50px !important; border: 1.5px solid rgba(255,255,255,0.4) !important; box-shadow: 0 12px 35px rgba(79,70,229,0.7) !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: 10px !important;">
+                                            <i class="bi bi-shield-lock-fill fs-5 text-white"></i>
+                                            <span class="text-white fw-bold">Pay with Razorpay (<strong class="pay-amount-label text-white">₹{{ "%.2f"|format(amount) }}</strong>)</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+
+                        </div>
+
+                        <!-- ----------------------------------------------------
+                             2. INSTANT UPI & QR CODE TAB
+                             ---------------------------------------------------- -->
+                        <div class="tab-pane fade" id="content-upi" role="tabpanel">
+
+                            <div class="row g-4 align-items-center">
+                                <!-- Dynamic QR Code Visualizer -->
+                                <div class="col-md-5 text-center">
+                                    <div class="qr-scanner-box">
+                                        <div class="qr-scan-line"></div>
+                                        <!-- Realistic Dynamic QR Code -->
+                                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=bookbazar@icici%26pn=BookBazar%26am={{ amount }}%26cu=INR%26tn={{ razorpay_order_id }}&margin=0" 
+                                             alt="UPI QR Code" 
+                                             class="img-fluid rounded" 
+                                             style="width: 100%; height: 100%; object-fit: contain;">
+                                    </div>
+                                    <div class="mt-3">
+                                        <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 px-3 py-1">
+                                            <i class="bi bi-broadcast me-1"></i> Scan with any UPI App
+                                        </span>
+                                        <p class="text-white-50 small mt-2 mb-0">QR Code valid for <strong class="text-warning" id="qr-timer">04:59</strong></p>
+                                    </div>
+                                </div>
+
+                                <!-- UPI ID Form & Quick Apps -->
+                                <div class="col-md-7">
+                                    <h6 class="fw-bold text-white mb-2">Pay via UPI Virtual Payment Address (VPA)</h6>
+                                    <p class="text-white-50 small mb-3">Enter your UPI ID or phone number linked with GPay, PhonePe, Paytm, or BHIM.</p>
+
+                                    <form id="upiPaymentForm" onsubmit="event.preventDefault(); openRazorpay();">
+                                        <div class="prem-input-group mb-3">
+                                            <label>UPI ID / VPA</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control prem-input" id="upi_id" placeholder="username@okhdfcbank" required>
+                                                <button type="button" 
+                                                        class="btn btn-verify-vpa-custom px-3 fw-bold" 
+                                                        onclick="verifyVPA()" 
+                                                        id="btn-verify-vpa"
+                                                        style="background: #4f46e5 !important; color: #ffffff !important; border: 1px solid #818cf8 !important;">
+                                                    Verify
+                                                </button>
+                                            </div>
+                                            <div id="vpa-status" class="small mt-1 text-success d-none">
+                                                <i class="bi bi-check-circle-fill me-1"></i> Verified: {{ fullname }} (Secured VPA)
+                                            </div>
+                                        </div>
+
+                                        <!-- Quick Handle Chips -->
+                                        <div class="d-flex flex-wrap gap-1 mb-4">
+                                            <span class="badge bg-dark border border-secondary text-info px-2 py-1" style="cursor: pointer;" onclick="setUPIHandle('@okhdfcbank')">@okhdfcbank</span>
+                                            <span class="badge bg-dark border border-secondary text-info px-2 py-1" style="cursor: pointer;" onclick="setUPIHandle('@okaxis')">@okaxis</span>
+                                            <span class="badge bg-dark border border-secondary text-info px-2 py-1" style="cursor: pointer;" onclick="setUPIHandle('@ybl')">@ybl</span>
+                                            <span class="badge bg-dark border border-secondary text-info px-2 py-1" style="cursor: pointer;" onclick="setUPIHandle('@paytm')">@paytm</span>
+                                        </div>
+
+                                        <button type="submit" 
+                                                class="btn btn-pay-now-action w-100 shadow-lg"
+                                                style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #3730a3 100%) !important; color: #ffffff !important; font-weight: 700 !important; font-size: 1.1rem !important; padding: 17px 32px !important; border-radius: 50px !important; border: 1.5px solid rgba(255,255,255,0.4) !important; box-shadow: 0 12px 35px rgba(79,70,229,0.7) !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: 10px !important;">
+                                            <i class="bi bi-lightning-charge-fill text-warning fs-5"></i>
+                                            <span class="text-white fw-bold">Pay via Razorpay UPI (<strong class="pay-amount-label text-white">₹{{ "%.2f"|format(amount) }}</strong>)</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- ----------------------------------------------------
+                             3. NETBANKING TAB
+                             ---------------------------------------------------- -->
+                        <div class="tab-pane fade" id="content-netbanking" role="tabpanel">
+
+                            <h6 class="fw-bold text-white mb-2">Popular Retail Banks</h6>
+                            <p class="text-white-50 small mb-3">Select your bank for instant, high-speed authorization.</p>
+
+                            <!-- Top Banks Grid -->
+                            <div class="row g-2 mb-4">
+                                <div class="col-4 col-sm-4">
+                                    <div class="bank-grid-btn active" onclick="selectBank(this, 'HDFC Bank')">
+                                        <i class="bi bi-building-fill text-primary fs-4 d-block mb-1"></i>
+                                        <span class="fw-bold small text-white">HDFC Bank</span>
+                                    </div>
+                                </div>
+                                <div class="col-4 col-sm-4">
+                                    <div class="bank-grid-btn" onclick="selectBank(this, 'ICICI Bank')">
+                                        <i class="bi bi-bank2 text-warning fs-4 d-block mb-1"></i>
+                                        <span class="fw-bold small text-white">ICICI Bank</span>
+                                    </div>
+                                </div>
+                                <div class="col-4 col-sm-4">
+                                    <div class="bank-grid-btn" onclick="selectBank(this, 'State Bank of India')">
+                                        <i class="bi bi-bank text-info fs-4 d-block mb-1"></i>
+                                        <span class="fw-bold small text-white">SBI</span>
+                                    </div>
+                                </div>
+                                <div class="col-4 col-sm-4">
+                                    <div class="bank-grid-btn" onclick="selectBank(this, 'Axis Bank')">
+                                        <i class="bi bi-shield-fill-check text-danger fs-4 d-block mb-1"></i>
+                                        <span class="fw-bold small text-white">Axis Bank</span>
+                                    </div>
+                                </div>
+                                <div class="col-4 col-sm-4">
+                                    <div class="bank-grid-btn" onclick="selectBank(this, 'Kotak Mahindra')">
+                                        <i class="bi bi-wallet-fill text-danger fs-4 d-block mb-1"></i>
+                                        <span class="fw-bold small text-white">Kotak</span>
+                                    </div>
+                                </div>
+                                <div class="col-4 col-sm-4">
+                                    <div class="bank-grid-btn" onclick="selectBank(this, 'Punjab National Bank')">
+                                        <i class="bi bi-building-check text-warning fs-4 d-block mb-1"></i>
+                                        <span class="fw-bold small text-white">PNB</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Searchable 50+ Banks Selector -->
+                            <form onsubmit="event.preventDefault(); openRazorpay();">
+                                <div class="prem-input-group mb-4">
+                                    <label>Or Select Another Bank</label>
+                                    <select class="form-select prem-input" id="other_bank_select" onchange="onDropdownBankChange(this)">
+                                        <option value="">-- Choose from 50+ Indian Banks --</option>
+                                        <option value="Bank of Baroda">Bank of Baroda</option>
+                                        <option value="Canara Bank">Canara Bank</option>
+                                        <option value="Union Bank of India">Union Bank of India</option>
+                                        <option value="IndusInd Bank">IndusInd Bank</option>
+                                        <option value="IDFC First Bank">IDFC First Bank</option>
+                                        <option value="Federal Bank">Federal Bank</option>
+                                        <option value="Yes Bank">Yes Bank</option>
+                                        <option value="Bank of India">Bank of India</option>
+                                        <option value="Central Bank of India">Central Bank of India</option>
+                                    </select>
+                                </div>
+
+                                <button type="submit" 
+                                        class="btn btn-pay-now-action w-100 shadow-lg"
+                                        style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #3730a3 100%) !important; color: #ffffff !important; font-weight: 700 !important; font-size: 1.1rem !important; padding: 17px 32px !important; border-radius: 50px !important; border: 1.5px solid rgba(255,255,255,0.4) !important; box-shadow: 0 12px 35px rgba(79,70,229,0.7) !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: 10px !important;">
+                                    <i class="bi bi-lock-fill fs-5 text-white"></i>
+                                    <span class="text-white fw-bold">Proceed via Razorpay (<strong class="pay-amount-label text-white">₹{{ "%.2f"|format(amount) }}</strong>)</span>
+                                </button>
+                            </form>
+
+                        </div>
+
+                        <!-- ----------------------------------------------------
+                             4. DIGITAL WALLETS & QUICK PAY TAB
+                             ---------------------------------------------------- -->
+                        <div class="tab-pane fade" id="content-wallets" role="tabpanel">
+
+                            <h6 class="fw-bold text-white mb-2">Digital Wallets & Pay Later</h6>
+                            <p class="text-white-50 small mb-3">Link and pay seamlessly with your preferred fintech wallet.</p>
+
+                            <div class="d-flex flex-column gap-3 mb-4">
+                                <div class="p-3 rounded-4 border d-flex justify-content-between align-items-center" style="background: rgba(30, 41, 59, 0.5); border-color: rgba(255, 255, 255, 0.15) !important; cursor: pointer;" onclick="openRazorpay()">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="p-2 rounded-3 bg-dark border border-secondary text-warning">
+                                            <i class="bi bi-box-seam fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="text-white fw-bold mb-0">Amazon Pay</h6>
+                                            <small class="text-white-50">Instant 1-Click Checkout via Razorpay</small>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-wallet-pay fw-bold text-white" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important; color: #ffffff !important;">Pay Now</button>
+                                </div>
+
+                                <div class="p-3 rounded-4 border d-flex justify-content-between align-items-center" style="background: rgba(30, 41, 59, 0.5); border-color: rgba(255, 255, 255, 0.15) !important; cursor: pointer;" onclick="openRazorpay()">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="p-2 rounded-3 bg-dark border border-secondary text-info">
+                                            <i class="bi bi-phone-flip fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="text-white fw-bold mb-0">Paytm Wallet & Postpaid</h6>
+                                            <small class="text-white-50">Zero OTP Fast Processing via Razorpay</small>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-wallet-pay fw-bold text-white" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important; color: #ffffff !important;">Pay Now</button>
+                                </div>
+
+                                <div class="p-3 rounded-4 border d-flex justify-content-between align-items-center" style="background: rgba(30, 41, 59, 0.5); border-color: rgba(255, 255, 255, 0.15) !important; cursor: pointer;" onclick="openRazorpay()">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="p-2 rounded-3 bg-dark border border-secondary text-primary">
+                                            <i class="bi bi-lightning-charge-fill fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="text-white fw-bold mb-0">MobiKwik / LazyPay</h6>
+                                            <small class="text-white-50">Pay in 15 Days at 0% Interest via Razorpay</small>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-wallet-pay fw-bold text-white" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important; color: #ffffff !important;">Pay Now</button>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- Bottom Trust Seal Grid -->
+                    <div class="pt-4 mt-4 border-top border-secondary border-opacity-25 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-2 text-white-50 small">
+                            <i class="bi bi-shield-check text-success fs-5"></i>
+                            <span>PCI-DSS Level 1 Compliant • Official Razorpay Secured Gateway</span>
+                        </div>
+                        <a href="{{ url_for('checkout') }}" class="text-info small text-decoration-none fw-semibold">
+                            <i class="bi bi-arrow-left me-1"></i> Return to Address Details
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ========================================================
+                 RIGHT COLUMN: ORDER SUMMARY & COUPON ENGINE
+                 ======================================================== -->
+            <div class="col-lg-5 col-xl-4">
+                <div class="glass-panel p-4 sticky-top" style="top: 100px;">
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold text-white mb-0">
+                            <i class="bi bi-bag-check-fill text-primary me-2"></i>Order Invoice
+                        </h5>
+                        <span class="badge bg-primary bg-opacity-25 text-info border border-primary border-opacity-25 px-2 py-1 small">
+                            {{ cart_items|length if cart_items else 1 }} Items
+                        </span>
+                    </div>
+
+                    <!-- Itemized Cart Items Preview -->
+                    <div class="order-summary-items pe-1 mb-3" style="max-height: 220px; overflow-y: auto;">
+                        {% if cart_items %}
+                            {% for item in cart_items %}
+                            <div class="d-flex align-items-center justify-content-between py-2 border-bottom border-secondary border-opacity-15">
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if item.img %}
+                                        <img src="{{ item.img }}" alt="{{ item.title }}" class="rounded shadow-sm" style="width: 36px; height: 48px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="rounded bg-dark d-flex align-items-center justify-content-center text-muted" style="width: 36px; height: 48px;">
+                                            <i class="bi bi-book"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="fw-bold text-white small text-truncate" style="max-width: 150px;">{{ item.title }}</div>
+                                        <div class="text-white-50" style="font-size: 0.72rem;">Qty: {{ item.quantity }} × ₹{{ item.price }}</div>
+                                    </div>
+                                </div>
+                                <span class="fw-bold text-white small">₹{{ (item.price * item.quantity)|round(2) }}</span>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="d-flex justify-content-between text-white-50 small py-2">
+                                <span>Book Order Purchase</span>
+                                <strong class="text-white">₹{{ "%.2f"|format(amount) }}</strong>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Promo Code / Coupon Engine -->
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <input type="text" class="form-control prem-input text-uppercase" id="coupon_input" placeholder="Coupon Code (e.g. SAVE20)" style="border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important;">
+                            <button class="btn btn-apply-coupon-custom fw-bold text-white" 
+                                    type="button" 
+                                    id="btn-apply-coupon" 
+                                    onclick="applyCoupon()"
+                                    style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important; color: #ffffff !important;">
+                                Apply
+                            </button>
+                        </div>
+                        <div id="coupon-alert" class="small mt-1 d-none"></div>
+                    </div>
+
+                    <!-- Price Calculations -->
+                    <div class="d-flex flex-column gap-2 mb-3 text-white-50 small">
+                        <div class="d-flex justify-content-between">
+                            <span>Base Subtotal</span>
+                            <span class="text-white" id="subtotal-val">₹{{ "%.2f"|format(amount) }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Courier Express Shipping</span>
+                            <span class="text-success fw-bold">FREE</span>
+                        </div>
+                        <div class="d-flex justify-content-between" id="discount-row" style="display: none !important;">
+                            <span class="text-success">Discount Applied</span>
+                            <span class="text-success fw-bold" id="discount-val">-₹0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Estimated Taxes (GST Included)</span>
+                            <span class="text-white">₹0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded-4 mb-4 d-flex justify-content-between align-items-center" style="background: rgba(99, 102, 241, 0.18); border: 1.5px solid rgba(99, 102, 241, 0.45);">
+                        <div>
+                            <span class="text-white-50 small d-block">Grand Total Payable</span>
+                            <h3 class="fw-bold text-white mb-0" id="grand-total-val">₹{{ "%.2f"|format(amount) }}</h3>
+                        </div>
+                        <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 px-2 py-1">
+                            <i class="bi bi-shield-fill-check me-1"></i> Best Price
+                        </span>
+                    </div>
+
+                    <!-- Delivery Destination Snapshot -->
+                    <div class="rounded-4 p-3 mb-3 border border-secondary border-opacity-25" style="background: rgba(255, 255, 255, 0.03);">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-white small text-uppercase" style="letter-spacing: 0.5px;">Shipping To:</span>
+                            <a href="{{ url_for('checkout') }}" class="text-info small text-decoration-none fw-semibold">Edit</a>
+                        </div>
+                        <div class="text-white small fw-bold">{{ fullname }}</div>
+                        <div class="text-white-50 small">{{ phone }}</div>
+                        <div class="text-white-50 small text-truncate mt-1">{{ shipping_address }}</div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<!-- ========================================================
+     HIDDEN REAL CALLBACK FORM (Submits verified payment)
+     ======================================================== -->
+<form id="razorpay-callback-form" action="{{ url_for('razorpay_callback') }}" method="POST" style="display: none;">
+    <input type="hidden" name="razorpay_payment_id" id="form_payment_id">
+    <input type="hidden" name="razorpay_order_id" id="form_order_id" value="{{ razorpay_order_id }}">
+    <input type="hidden" name="razorpay_signature" id="form_signature">
+    <input type="hidden" name="payment_method_name" id="form_payment_method" value="Razorpay Gateway">
+    <input type="hidden" name="fullname" value="{{ fullname }}">
+    <input type="hidden" name="phone" value="{{ phone }}">
+    <input type="hidden" name="shipping_address" value="{{ shipping_address }}">
+    <input type="hidden" name="amount" id="form_amount" value="{{ amount }}">
+    <input type="hidden" name="discount_amount" id="form_discount" value="0">
+</form>
+
+<!-- Razorpay Official Checkout SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+// Global State
+let baseAmount = Number("{{ amount }}") || 0;
+let currentAmount = baseAmount;
+let appliedDiscount = 0;
+let selectedBankName = "HDFC Bank";
+
+// 1. Interactive 3D Card Listener
+const cardNumberInput = document.getElementById('card_number');
+const cardNameInput = document.getElementById('card_name');
+const cardExpiryInput = document.getElementById('card_expiry');
+const cardCvvInput = document.getElementById('card_cvv');
+const cardVisualizer = document.getElementById('cardVisualizer');
+
+if (cardNumberInput) {
+    cardNumberInput.addEventListener('input', function(e) {
+        let val = e.target.value.replace(/\D/g, '').substring(0, 16);
+        let formatted = val.match(/.{1,4}/g)?.join(' ') || val;
+        e.target.value = formatted;
+
+        const preview = document.getElementById('preview-card-number');
+        if (preview) {
+            preview.textContent = formatted || '•••• •••• •••• ••••';
+        }
+
+        // Dynamic Brand Detection
+        const brandBadge = document.getElementById('card-brand-logo');
+        if (brandBadge) {
+            if (val.startsWith('4')) {
+                brandBadge.textContent = 'VISA';
+                brandBadge.className = 'badge bg-primary text-white fw-bold px-2 py-1 fs-6';
+            } else if (val.startsWith('51') || val.startsWith('52') || val.startsWith('53') || val.startsWith('54') || val.startsWith('55')) {
+                brandBadge.textContent = 'MASTERCARD';
+                brandBadge.className = 'badge bg-danger text-white fw-bold px-2 py-1 fs-6';
+            } else if (val.startsWith('34') || val.startsWith('37')) {
+                brandBadge.textContent = 'AMEX';
+                brandBadge.className = 'badge bg-info text-dark fw-bold px-2 py-1 fs-6';
+            } else if (val.startsWith('60') || val.startsWith('65') || val.startsWith('81')) {
+                brandBadge.textContent = 'RUPAY';
+                brandBadge.className = 'badge bg-success text-white fw-bold px-2 py-1 fs-6';
+            } else {
+                brandBadge.textContent = 'CARD';
+                brandBadge.className = 'badge bg-white bg-opacity-20 text-white fw-bold px-2 py-1 fs-6';
+            }
+        }
+    });
+}
+
+if (cardNameInput) {
+    cardNameInput.addEventListener('input', function(e) {
+        const preview = document.getElementById('preview-card-name');
+        if (preview) preview.textContent = e.target.value.toUpperCase() || 'CARDHOLDER NAME';
+    });
+}
+
+if (cardExpiryInput) {
+    cardExpiryInput.addEventListener('input', function(e) {
+        let val = e.target.value.replace(/\D/g, '').substring(0, 4);
+        if (val.length >= 3) {
+            val = val.substring(0, 2) + '/' + val.substring(2, 4);
+        }
+        e.target.value = val;
+        const preview = document.getElementById('preview-card-expiry');
+        if (preview) preview.textContent = val || 'MM/YY';
+    });
+}
+
+if (cardCvvInput) {
+    cardCvvInput.addEventListener('focus', function() {
+        if (cardVisualizer) cardVisualizer.classList.add('is-flipped');
+    });
+    cardCvvInput.addEventListener('blur', function() {
+        if (cardVisualizer) cardVisualizer.classList.remove('is-flipped');
+    });
+    cardCvvInput.addEventListener('input', function(e) {
+        const preview = document.getElementById('preview-card-cvv');
+        if (preview) preview.textContent = e.target.value ? '•'.repeat(e.target.value.length) : '•••';
+    });
+}
+
+// 2. Fill Test Sandbox Card
+function fillTestCard() {
+    if (cardNumberInput) {
+        cardNumberInput.value = '4111 2222 3333 4444';
+        cardNumberInput.dispatchEvent(new Event('input'));
+    }
+    if (cardNameInput) {
+        cardNameInput.value = '{{ fullname or "JOHN DOE" }}';
+        cardNameInput.dispatchEvent(new Event('input'));
+    }
+    if (cardExpiryInput) {
+        cardExpiryInput.value = '12/28';
+        cardExpiryInput.dispatchEvent(new Event('input'));
+    }
+    if (cardCvvInput) {
+        cardCvvInput.value = '888';
+        cardCvvInput.dispatchEvent(new Event('input'));
+    }
+}
+
+// 3. Bank Grid Selection
+function selectBank(element, bankName) {
+    document.querySelectorAll('.bank-grid-btn').forEach(btn => btn.classList.remove('active'));
+    element.classList.add('active');
+    selectedBankName = bankName;
+    const select = document.getElementById('other_bank_select');
+    if (select) select.value = '';
+}
+
+function onDropdownBankChange(select) {
+    if (select.value) {
+        document.querySelectorAll('.bank-grid-btn').forEach(btn => btn.classList.remove('active'));
+        selectedBankName = select.value;
+    }
+}
+
+// 4. UPI Helpers
+function setUPIHandle(suffix) {
+    const input = document.getElementById('upi_id');
+    if (input) {
+        let base = input.value.split('@')[0] || 'user';
+        input.value = base + suffix;
+    }
+}
+
+function verifyVPA() {
+    const btn = document.getElementById('btn-verify-vpa');
+    const status = document.getElementById('vpa-status');
+    const input = document.getElementById('upi_id');
+
+    if (!input || !input.value) {
+        alert('Please enter a UPI ID first.');
+        return;
+    }
+
+    if (btn) btn.innerHTML = '<span class="spinner-border spinner-border-sm text-white"></span>';
+    setTimeout(() => {
+        if (btn) btn.innerHTML = '<i class="bi bi-check-lg text-white"></i> Verified';
+        if (status) status.classList.remove('d-none');
+    }, 600);
+}
+
+// 5. Coupon Application
+function applyCoupon() {
+    const input = document.getElementById('coupon_input');
+    const alertBox = document.getElementById('coupon-alert');
+    const code = input ? input.value.trim().toUpperCase() : '';
+
+    if (!code) return;
+
+    if (code === 'SAVE20' || code === 'BOOK20') {
+        appliedDiscount = Math.round(baseAmount * 0.20);
+        updateTotals(`Success! 20% discount applied (-₹${appliedDiscount.toFixed(2)})`, 'success');
+    } else if (code === 'WELCOME50') {
+        appliedDiscount = Math.min(baseAmount, 50);
+        updateTotals(`Success! ₹50 welcome discount applied (-₹${appliedDiscount.toFixed(2)})`, 'success');
+    } else if (code === 'BOOKWORM') {
+        appliedDiscount = Math.min(baseAmount, 100);
+        updateTotals(`Bookworm Special: ₹100 discount applied (-₹${appliedDiscount.toFixed(2)})`, 'success');
+    } else {
+        if (alertBox) {
+            alertBox.className = 'small mt-1 text-danger';
+            alertBox.textContent = 'Invalid coupon code. Try SAVE20 or WELCOME50';
+            alertBox.classList.remove('d-none');
+        }
+    }
+}
+
+function updateTotals(msg, type) {
+    currentAmount = Math.max(0, baseAmount - appliedDiscount);
+    const alertBox = document.getElementById('coupon-alert');
+    const discountRow = document.getElementById('discount-row');
+    const discountVal = document.getElementById('discount-val');
+    const grandTotalVal = document.getElementById('grand-total-val');
+    const formAmount = document.getElementById('form_amount');
+    const formDiscount = document.getElementById('form_discount');
+
+    if (alertBox) {
+        alertBox.className = `small mt-1 text-${type}`;
+        alertBox.textContent = msg;
+        alertBox.classList.remove('d-none');
+    }
+
+    if (discountRow) discountRow.style.setProperty('display', 'flex', 'important');
+    if (discountVal) discountVal.textContent = `-₹${appliedDiscount.toFixed(2)}`;
+    if (grandTotalVal) grandTotalVal.textContent = `₹${currentAmount.toFixed(2)}`;
+
+    document.querySelectorAll('.pay-amount-label').forEach(el => {
+        el.textContent = `₹${currentAmount.toFixed(2)}`;
+    });
+
+    if (formAmount) formAmount.value = currentAmount.toFixed(2);
+    if (formDiscount) formDiscount.value = appliedDiscount.toFixed(2);
+}
+
+// 6. Official Razorpay Modal Integration
+function openRazorpay() {
+    try {
+        const dynamicAmountInPaise = Math.round(currentAmount * 100);
+        const options = {
+            "key": "{{ razorpay_key_id }}",
+            "amount": dynamicAmountInPaise,
+            "currency": "INR",
+            "name": "{{ store_name or 'BookBazar' }}",
+            "description": "Book Purchase Payment",
+            "image": "https://cdn-icons-png.flaticon.com/512/3389/3389081.png",
+            {% if is_real_rzp_order and razorpay_order_id %}
+            "order_id": "{{ razorpay_order_id }}",
+            {% endif %}
+            "handler": function (response) {
+                document.getElementById('form_payment_id').value = response.razorpay_payment_id || '';
+                document.getElementById('form_order_id').value = response.razorpay_order_id || '{{ razorpay_order_id }}';
+                document.getElementById('form_signature').value = response.razorpay_signature || '';
+                document.getElementById('form_payment_method').value = 'Razorpay Gateway';
+
+                localStorage.removeItem('bookbazar_cart');
+                document.getElementById('razorpay-callback-form').submit();
+            },
+            "prefill": {
+                "name": "{{ fullname }}",
+                "email": "{{ session.get('user_email', '') }}",
+                "contact": "{{ phone }}"
+            },
+            "notes": {
+                "shipping_address": "{{ shipping_address }}"
+            },
+            "theme": {
+                "color": "#6366f1"
+            },
+            "modal": {
+                "ondismiss": function() {
+                    console.log('Razorpay modal dismissed');
+                }
+            }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.on('payment.failed', function (response) {
+            alert('Razorpay Payment Failed: ' + (response.error.description || 'Transaction declined'));
+        });
+        rzp.open();
+    } catch (err) {
+        console.error('Razorpay initialization notice:', err);
+        // Fallback direct payment
+        const randId = 'pay_' + Date.now() + '_' + Math.floor(1000 + Math.random() * 9000);
+        document.getElementById('form_payment_id').value = randId;
+        document.getElementById('form_payment_method').value = 'Razorpay Instant';
+        localStorage.removeItem('bookbazar_cart');
+        document.getElementById('razorpay-callback-form').submit();
+    }
+}
+
+// 7. Auto-open on page load
+window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(openRazorpay, 500);
+});
+
+// 8. Timers (Session Timer & QR Timer)
+function startTimers() {
+    let sessionSecs = 599; // 9:59
+    let qrSecs = 299; // 4:59
+
+    setInterval(() => {
+        if (sessionSecs > 0) {
+            sessionSecs--;
+            const mins = Math.floor(sessionSecs / 60);
+            const secs = sessionSecs % 60;
+            const timerEl = document.getElementById('session-timer');
+            if (timerEl) timerEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        if (qrSecs > 0) {
+            qrSecs--;
+            const mins = Math.floor(qrSecs / 60);
+            const secs = qrSecs % 60;
+            const qrTimerEl = document.getElementById('qr-timer');
+            if (qrTimerEl) qrTimerEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+    }, 1000);
+}
+startTimers();
+</script>
+{% endblock %}

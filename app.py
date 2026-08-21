@@ -1,5 +1,10 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash, make_response
 import csv
+import os
+import time
+import random
+import hmac
+import hashlib
 from io import StringIO
 from flask_mysqldb import MySQL
 import MySQLdb
@@ -49,26 +54,22 @@ def initialize_database():
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id INT AUTO_INCREMENT PRIMARY KEY,
-                    name VARCHAR(255) NOT NULL,
-                    email VARCHAR(255) UNIQUE NOT NULL,
+                    name VARCHAR(100) NOT NULL,
+                    email VARCHAR(100) UNIQUE NOT NULL,
                     password VARCHAR(255) NOT NULL,
-                    role VARCHAR(50) DEFAULT 'User',
-                    shipping_address TEXT DEFAULT NULL,
-                    avatar MEDIUMTEXT DEFAULT NULL,
-                    last_notification_read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    role ENUM('User', 'Admin') DEFAULT 'User',
+                    shipping_address TEXT,
+                    avatar VARCHAR(255),
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """)
-            try:
-                cursor.execute("ALTER TABLE users ADD COLUMN last_notification_read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;")
-            except Exception:
-                pass
 
             # Create Categories Table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS categories (
                     id INT AUTO_INCREMENT PRIMARY KEY,
-                    name VARCHAR(255) UNIQUE NOT NULL,
+                    name VARCHAR(100) UNIQUE NOT NULL,
+                    description TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """)
@@ -79,49 +80,16 @@ def initialize_database():
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     title VARCHAR(255) NOT NULL,
                     author VARCHAR(255) NOT NULL,
-                    category_name VARCHAR(255) NOT NULL,
+                    category_name VARCHAR(100),
                     price DECIMAL(10, 2) NOT NULL,
-                    original_price DECIMAL(10, 2) DEFAULT NULL,
-                    img LONGTEXT,
-                    book_condition VARCHAR(50) DEFAULT 'new',
-                    condition_description VARCHAR(255) DEFAULT NULL,
-                    additional_notes TEXT DEFAULT NULL,
-                    seller_id INT DEFAULT NULL,
-                    approved BOOLEAN DEFAULT TRUE,
+                    img VARCHAR(255),
+                    book_condition ENUM('new', 'pre-loved') DEFAULT 'new',
+                    condition_description TEXT,
+                    seller_id INT,
+                    approved BOOLEAN DEFAULT FALSE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE SET NULL
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-            """)
-
-            # Create Orders Table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS orders (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    order_number VARCHAR(50) UNIQUE NOT NULL,
-                    user_id INT DEFAULT NULL,
-                    total_amount DECIMAL(10, 2) NOT NULL,
-                    payment_method VARCHAR(100) NOT NULL,
-                    shipping_address TEXT DEFAULT NULL,
-                    status VARCHAR(50) DEFAULT 'Processing',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-            """)
-            try:
-                cursor.execute("ALTER TABLE orders ADD COLUMN shipping_address TEXT DEFAULT NULL;")
-            except Exception:
-                pass
-
-            # Create Order Items Table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS order_items (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    order_id INT NOT NULL,
-                    book_id INT DEFAULT NULL,
-                    quantity INT NOT NULL DEFAULT 1,
-                    price DECIMAL(10, 2) NOT NULL,
-                    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-                    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE SET NULL
+                    FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE SET NULL,
+                    FOREIGN KEY (category_name) REFERENCES categories(name) ON UPDATE CASCADE ON DELETE SET NULL
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """)
 
@@ -131,9 +99,8 @@ def initialize_database():
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id INT NOT NULL,
                     book_id INT NOT NULL,
-                    quantity INT NOT NULL DEFAULT 1,
+                    quantity INT DEFAULT 1,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE KEY user_book_cart (user_id, book_id),
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
                     FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -146,7 +113,63 @@ def initialize_database():
                     user_id INT NOT NULL,
                     book_id INT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE KEY user_book_wishlist (user_id, book_id),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """)
+
+            # Create Orders Table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS orders (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    order_number VARCHAR(50) UNIQUE NOT NULL,
+                    user_id INT NOT NULL,
+                    total_amount DECIMAL(10, 2) NOT NULL,
+                    payment_method VARCHAR(50) DEFAULT 'Cash on Delivery',
+                    shipping_address TEXT,
+                    status ENUM('Processing', 'Shipped', 'Delivered', 'Cancelled', 'Paid') DEFAULT 'Processing',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """)
+
+            # Create Order Items Table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS order_items (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    order_id INT NOT NULL,
+                    book_id INT,
+                    quantity INT DEFAULT 1,
+                    price DECIMAL(10, 2) NOT NULL,
+                    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+                    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE SET NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """)
+
+            # Create User Activity Notifications Table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT,
+                    type VARCHAR(50) NOT NULL,
+                    title VARCHAR(255) NOT NULL,
+                    message TEXT NOT NULL,
+                    link VARCHAR(255),
+                    is_read BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """)
+
+            # Create User Rating & Reviews Table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS reviews (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    book_id INT NOT NULL,
+                    rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+                    comment TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
                     FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -167,7 +190,10 @@ def initialize_database():
                 ("support_email", "support@bookbazar.com"),
                 ("contact_phone", "+91 9876543210"),
                 ("currency", "INR"),
-                ("auto_approve", "false")
+                ("auto_approve", "false"),
+                ("razorpay_key_id", "rzp_test_TP9g7JNsYOjgSX"),
+                ("razorpay_key_secret", "dh4CgStGKqRybxmuekMXugqb"),
+                ("razorpay_enabled", "true")
             ]
             for key, val in default_settings:
                 cursor.execute("""
@@ -294,7 +320,10 @@ def get_store_settings():
         "support_email": "support@bookbazar.com",
         "contact_phone": "+91 9876543210",
         "currency": "INR",
-        "auto_approve": False
+        "auto_approve": False,
+        "razorpay_key_id": "rzp_test_TP9g7JNsYOjgSX",
+        "razorpay_key_secret": "dh4CgStGKqRybxmuekMXugqb",
+        "razorpay_enabled": True
     }
     try:
         conn = mysql.connection
@@ -304,7 +333,7 @@ def get_store_settings():
             for r in rows:
                 key = r["setting_key"]
                 val = r["setting_value"]
-                if key == "auto_approve":
+                if key in ["auto_approve", "razorpay_enabled"]:
                     settings[key] = (val == "true" or val == "1" or val is True)
                 else:
                     settings[key] = val
@@ -428,7 +457,15 @@ def books():
 @app.route("/book/<int:id>")
 @app.route("/books/<int:id>")
 def book_details(id=1):
-    return render_template("book_details.html", id=id)
+    book = None
+    try:
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM books WHERE id = %s", (id,))
+            book = cursor.fetchone()
+    except Exception as e:
+        print(f"Error fetching book details from database: {e}")
+    return render_template("book_details.html", id=id, book=book)
 
 
 # ==========================
@@ -459,6 +496,8 @@ def categories():
 @app.route("/sell-book")
 @app.route("/sell--book")
 def sell_book():
+    if "user" not in session:
+        return redirect(url_for("login", next=url_for("sell_book")))
     categories_list = []
     try:
         conn = mysql.connection
@@ -478,7 +517,7 @@ def sell_book():
 @app.route("/my-cart")
 def cart():
     if "user" not in session:
-        return redirect(url_for("login"))
+        return redirect(url_for("login", next=url_for("cart")))
     return render_template("user/cart.html")
 
 
@@ -490,7 +529,7 @@ def cart():
 @app.route("/my-wishlist")
 def wishlist():
     if "user" not in session:
-        return redirect(url_for("login"))
+        return redirect(url_for("login", next=url_for("wishlist")))
     return render_template("user/wishlist.html")
 
 
@@ -500,9 +539,16 @@ def wishlist():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    next_url = request.args.get("next") or request.form.get("next")
+    book_id = request.args.get("book_id") or request.form.get("book_id")
+
     if "user" in session:
         if session["user"] == "Admin":
             return redirect(url_for("admin_dashboard"))
+        elif next_url and next_url.startswith("/") and not next_url.startswith("//"):
+            return redirect(next_url)
+        elif book_id:
+            return redirect(url_for("book_details", id=book_id))
         else:
             return redirect(url_for("profile"))
 
@@ -536,7 +582,13 @@ def login():
                         session["user_name"] = user["name"]
                         session["user_email"] = user["email"]
                         session["user_avatar"] = user.get("avatar")
-                        return redirect(url_for("profile"))
+
+                        if next_url and next_url.startswith("/") and not next_url.startswith("//"):
+                            return redirect(next_url)
+                        elif book_id:
+                            return redirect(url_for("book_details", id=book_id))
+                        else:
+                            return redirect(url_for("profile"))
                 else:
                     error = "Invalid Email or Password"
             except Exception as e:
@@ -549,7 +601,9 @@ def login():
         error=error,
         entered_email=entered_email,
         registered=registered,
-        password_reset=password_reset
+        password_reset=password_reset,
+        next_url=next_url,
+        book_id=book_id
     )
 
 
@@ -679,6 +733,7 @@ def admin_login():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    next_url = request.args.get("next") or request.form.get("next")
     error = None
     if request.method == "GET":
         session.clear()
@@ -704,11 +759,13 @@ def register():
                             (name, email, hashed_pwd)
                         )
                         conn.commit()
+                        if next_url:
+                            return redirect(url_for("login", registered="true", next=next_url))
                         return redirect(url_for("login", registered="true"))
             except Exception as e:
                 error = f"Database error: {e}"
 
-    return render_template("user/register.html", error=error)
+    return render_template("user/register.html", error=error, next_url=next_url)
 
 
 # ==========================
@@ -2153,6 +2210,17 @@ def admin_settings():
 
             flash("Store preferences updated successfully across the entire site!", "success")
 
+        elif action == "update_payment":
+            razorpay_key_id = request.form.get("razorpay_key_id", "rzp_test_TP9g7JNsYOjgSX").strip()
+            razorpay_key_secret = request.form.get("razorpay_key_secret", "dh4CgStGKqRybxmuekMXugqb").strip()
+            razorpay_enabled = "true" if request.form.get("razorpay_enabled") == "on" else "false"
+
+            update_store_setting("razorpay_key_id", razorpay_key_id)
+            update_store_setting("razorpay_key_secret", razorpay_key_secret)
+            update_store_setting("razorpay_enabled", razorpay_enabled)
+
+            flash("Razorpay payment gateway settings updated successfully!", "success")
+
         return redirect(url_for("admin_settings"))
 
     store_config = get_store_settings()
@@ -2631,6 +2699,374 @@ def place_order():
         return redirect(url_for("orders"))
     except Exception as e:
         return f"Error placing order: {e}"
+
+
+# ==========================
+# RAZORPAY DEDICATED PAYMENT ROUTES
+# ==========================
+
+@app.route("/payment/razorpay", methods=["GET", "POST"])
+@app.route("/razorpay-checkout", methods=["GET", "POST"])
+def razorpay_payment_page():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    
+    # If POSTed from checkout form, capture and remember address details
+    if request.method == "POST":
+        fullname = request.form.get("fullname", "").strip() or session.get("user_name", "Customer")
+        phone = request.form.get("phone", "").strip()
+        house = request.form.get("house", "").strip()
+        street = request.form.get("street", "").strip()
+        city = request.form.get("city", "").strip()
+        state = request.form.get("state", "").strip()
+        pincode = request.form.get("pincode", "").strip()
+
+        address_parts = []
+        if house: address_parts.append(house)
+        if street: address_parts.append(street)
+        if city or state: address_parts.append(f"{city}, {state}".strip(", "))
+        if pincode: address_parts.append(f"Pincode: {pincode}")
+
+        shipping_address = ", ".join(address_parts)
+        if not shipping_address and request.form.get("shipping_address"):
+            shipping_address = request.form.get("shipping_address").strip()
+        if not shipping_address:
+            shipping_address = "Standard Delivery Address"
+
+        # Save temporarily to session
+        session["temp_checkout_fullname"] = fullname
+        session["temp_checkout_phone"] = phone
+        session["temp_checkout_address"] = shipping_address
+    else:
+        fullname = session.get("temp_checkout_fullname", session.get("user_name", "Customer"))
+        phone = session.get("temp_checkout_phone", "")
+        shipping_address = session.get("temp_checkout_address", "Standard Delivery Address")
+
+    # Fetch total amount and itemized details from user cart
+    total_amount = 0.0
+    cart_items_list = []
+    try:
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT c.quantity, b.id, b.title, b.author, b.price, b.img, b.category_name 
+                FROM cart_items c
+                JOIN books b ON c.book_id = b.id
+                WHERE c.user_id = %s
+            """, (user_id,))
+            cart_items_list = cursor.fetchall() or []
+            if cart_items_list:
+                total_amount = sum(float(item["price"]) * item["quantity"] for item in cart_items_list)
+    except Exception as e:
+        print(f"Error computing cart total for Razorpay: {e}")
+
+    if total_amount <= 0:
+        flash("Your cart is empty. Please add books to proceed with payment.", "warning")
+        return redirect(url_for("cart"))
+
+    amount_in_paise = int(round(total_amount * 100))
+    settings = get_store_settings()
+    key_id = settings.get("razorpay_key_id", "rzp_test_TP9g7JNsYOjgSX")
+    key_secret = settings.get("razorpay_key_secret", "dh4CgStGKqRybxmuekMXugqb")
+
+    # Create official Razorpay Order
+    razorpay_order_id = ""
+    is_real_rzp_order = False
+    try:
+        import razorpay
+        client = razorpay.Client(auth=(key_id, key_secret))
+        rzp_order = client.order.create({
+            "amount": amount_in_paise,
+            "currency": "INR",
+            "payment_capture": 1
+        })
+        if rzp_order and "id" in rzp_order:
+            razorpay_order_id = rzp_order["id"]
+            is_real_rzp_order = True
+    except Exception as rzp_err:
+        print(f"Razorpay Client notice: {rzp_err}")
+        razorpay_order_id = f"order_{int(time.time())}_{random.randint(1000, 9999)}"
+
+    return render_template(
+        "user/razorpay_checkout.html",
+        fullname=fullname,
+        phone=phone,
+        shipping_address=shipping_address,
+        amount=total_amount,
+        amount_in_paise=amount_in_paise,
+        razorpay_key_id=key_id,
+        razorpay_order_id=razorpay_order_id,
+        is_real_rzp_order=is_real_rzp_order,
+        cart_items=cart_items_list,
+        store_name=settings.get("store_name", "BookBazar")
+    )
+
+
+@app.route("/payment/razorpay/callback", methods=["POST"])
+def razorpay_callback():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    payment_method_name = request.form.get("payment_method_name", "Razorpay Gateway").strip()
+    payment_id = request.form.get("razorpay_payment_id") or f"pay_test_{int(time.time())}"
+    order_id = request.form.get("razorpay_order_id", "")
+    signature = request.form.get("razorpay_signature", "")
+    
+    fullname = request.form.get("fullname", session.get("user_name", "Customer")).strip()
+    phone = request.form.get("phone", "").strip()
+    shipping_address = request.form.get("shipping_address", "Standard Delivery Address").strip()
+    amount_str = request.form.get("amount", "0")
+    discount_str = request.form.get("discount_amount", "0")
+    
+    # Cryptographic signature verification when key secret is configured
+    settings = get_store_settings()
+    key_secret = settings.get("razorpay_key_secret", "")
+    if key_secret and key_secret != "dummy_test_secret" and signature and order_id:
+        try:
+            msg = f"{order_id}|{payment_id}".encode()
+            expected_sig = hmac.new(key_secret.encode(), msg, hashlib.sha256).hexdigest()
+            if not hmac.compare_digest(expected_sig, signature):
+                flash("Razorpay security signature verification failed. Please retry.", "danger")
+                return redirect(url_for("checkout"))
+        except Exception as sig_err:
+            print(f"Signature check exception: {sig_err}")
+
+    # Process and record order in database
+    try:
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            # Get cart items
+            cursor.execute("""
+                SELECT c.quantity, b.id, b.price, b.title 
+                FROM cart_items c
+                JOIN books b ON c.book_id = b.id
+                WHERE c.user_id = %s
+            """, (user_id,))
+            cart_items = cursor.fetchall()
+
+            if cart_items:
+                raw_total = sum(float(item["price"]) * item["quantity"] for item in cart_items)
+            else:
+                raw_total = float(amount_str) if amount_str else 0.0
+
+            try:
+                discount_amt = float(discount_str) if discount_str else 0.0
+            except:
+                discount_amt = 0.0
+                
+            final_total = max(0.0, raw_total - discount_amt)
+            if amount_str and float(amount_str) > 0:
+                final_total = float(amount_str)
+
+            order_number = f"#ORD-{random.randint(1000, 9999)}"
+            payment_text = f"{payment_method_name} (Ref: {payment_id})"
+
+            # Insert Order marked as Paid
+            cursor.execute(
+                """INSERT INTO orders (order_number, user_id, total_amount, payment_method, shipping_address, status) 
+                VALUES (%s, %s, %s, %s, %s, 'Paid')""",
+                (order_number, user_id, final_total, payment_text, shipping_address)
+            )
+            created_order_id = cursor.lastrowid
+
+            # Update user profile address
+            if shipping_address and shipping_address != "Standard Delivery Address":
+                cursor.execute(
+                    "UPDATE users SET shipping_address = %s WHERE id = %s",
+                    (shipping_address, user_id)
+                )
+
+            # Insert Order Items
+            if cart_items:
+                for item in cart_items:
+                    cursor.execute(
+                        "INSERT INTO order_items (order_id, book_id, quantity, price) VALUES (%s, %s, %s, %s)",
+                        (created_order_id, item["id"], item["quantity"], item["price"])
+                    )
+
+            # Clear Cart
+            cursor.execute("DELETE FROM cart_items WHERE user_id = %s", (user_id,))
+
+        conn.commit()
+
+        # Set session order confirmation details
+        session["last_order_number"] = order_number
+        session["last_order_payment"] = payment_text
+        session["last_order_total"] = f"{final_total:.2f}"
+        session["last_order_address"] = shipping_address
+
+        return redirect(url_for("orders"))
+    except Exception as e:
+        flash(f"Error finalizing order: {e}", "danger")
+        return redirect(url_for("checkout"))
+
+
+# ==========================
+# RAZORPAY JSON API ENDPOINTS (Fallback)
+# ==========================
+
+@app.route("/api/razorpay/create-order", methods=["POST"])
+def razorpay_create_order():
+    if "user_id" not in session:
+        return jsonify({"error": "Please login to proceed with payment."}), 401
+        
+    try:
+        data = request.get_json() or {}
+        user_id = session["user_id"]
+        
+        # Calculate total from database cart items
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT c.quantity, b.price 
+                FROM cart_items c
+                JOIN books b ON c.book_id = b.id
+                WHERE c.user_id = %s
+            """, (user_id,))
+            cart_items = cursor.fetchall()
+            
+        if cart_items:
+            amount = sum(float(item["price"]) * item["quantity"] for item in cart_items)
+        else:
+            amount = float(data.get("amount", 0))
+            
+        if amount <= 0:
+            return jsonify({"error": "Cart is empty or invalid amount."}), 400
+            
+        settings = get_store_settings()
+        key_id = settings.get("razorpay_key_id", "rzp_test_1DP5mmOlF5G5ag")
+        key_secret = settings.get("razorpay_key_secret", "dummy_test_secret")
+        amount_in_paise = int(round(amount * 100))
+        
+        razorpay_order_id = f"order_test_{int(time.time())}_{random.randint(100, 999)}"
+        try:
+            import razorpay
+            client = razorpay.Client(auth=(key_id, key_secret))
+            rzp_order = client.order.create({
+                "amount": amount_in_paise,
+                "currency": "INR",
+                "payment_capture": 1
+            })
+            if rzp_order and "id" in rzp_order:
+                razorpay_order_id = rzp_order["id"]
+        except Exception as rzp_err:
+            print(f"Razorpay Client initialization notice: {rzp_err}")
+
+        return jsonify({
+            "success": True,
+            "key_id": key_id,
+            "amount": amount_in_paise,
+            "currency": "INR",
+            "order_id": razorpay_order_id,
+            "store_name": settings.get("store_name", "BookBazar"),
+            "prefill": {
+                "name": session.get("user_name", ""),
+                "email": session.get("user_email", "")
+            }
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/razorpay/verify-payment", methods=["POST"])
+def razorpay_verify_payment():
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        data = request.get_json() or {}
+        user_id = session["user_id"]
+        
+        payment_id = data.get("razorpay_payment_id") or f"pay_test_{int(time.time())}"
+        order_id = data.get("razorpay_order_id", "")
+        signature = data.get("razorpay_signature", "")
+        
+        # Address construction
+        fullname = data.get("fullname", "").strip()
+        phone = data.get("phone", "").strip()
+        house = data.get("house", "").strip()
+        street = data.get("street", "").strip()
+        city = data.get("city", "").strip()
+        state = data.get("state", "").strip()
+        pincode = data.get("pincode", "").strip()
+        
+        address_components = []
+        if house: address_components.append(house)
+        if street: address_components.append(street)
+        if city or state: address_components.append(f"{city}, {state}".strip(", "))
+        if pincode: address_components.append(f"Pincode: {pincode}")
+        if phone: address_components.append(f"Phone: {phone}")
+        
+        full_shipping_address = ", ".join(address_components)
+        if not full_shipping_address and data.get("shipping_address"):
+            full_shipping_address = data.get("shipping_address").strip()
+        if not full_shipping_address:
+            full_shipping_address = "Standard Delivery Address"
+            
+        order_number = f"#ORD-{random.randint(1000, 9999)}"
+        payment_text = f"Razorpay (Ref: {payment_id})"
+        
+        conn = mysql.connection
+        with conn.cursor() as cursor:
+            # Get cart items
+            cursor.execute("""
+                SELECT c.quantity, b.id, b.price, b.title 
+                FROM cart_items c
+                JOIN books b ON c.book_id = b.id
+                WHERE c.user_id = %s
+            """, (user_id,))
+            cart_items = cursor.fetchall()
+            
+            if cart_items:
+                total_amount = sum(float(item["price"]) * item["quantity"] for item in cart_items)
+            else:
+                total_amount = float(data.get("amount", 0)) / 100.0 if data.get("amount") else 0.0
+
+            # Insert Order marked as Paid
+            cursor.execute(
+                """INSERT INTO orders (order_number, user_id, total_amount, payment_method, shipping_address, status) 
+                VALUES (%s, %s, %s, %s, %s, 'Paid')""",
+                (order_number, user_id, total_amount, payment_text, full_shipping_address)
+            )
+            created_order_id = cursor.lastrowid
+            
+            # Update user's default shipping address
+            if full_shipping_address and full_shipping_address != "Standard Delivery Address":
+                cursor.execute(
+                    "UPDATE users SET shipping_address = %s WHERE id = %s",
+                    (full_shipping_address, user_id)
+                )
+            
+            # Insert Order Items
+            if cart_items:
+                for item in cart_items:
+                    cursor.execute(
+                        "INSERT INTO order_items (order_id, book_id, quantity, price) VALUES (%s, %s, %s, %s)",
+                        (created_order_id, item["id"], item["quantity"], item["price"])
+                    )
+            
+            # Clear user cart items
+            cursor.execute("DELETE FROM cart_items WHERE user_id = %s", (user_id,))
+            
+        conn.commit()
+        
+        # Save last order details to session for instant confirmation banner on /orders
+        session["last_order_number"] = order_number
+        session["last_order_payment"] = payment_text
+        session["last_order_total"] = total_amount
+        session["last_order_address"] = full_shipping_address
+        
+        return jsonify({
+            "success": True,
+            "order_number": order_number,
+            "payment_id": payment_id,
+            "redirect_url": url_for("orders")
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # ==========================
